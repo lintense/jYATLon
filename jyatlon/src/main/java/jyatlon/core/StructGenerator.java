@@ -75,9 +75,15 @@ public class StructGenerator<T> extends YATLBaseListener {
 			
 			// Prepare the constructor parameters list
 			StringBuffer buf = new StringBuffer();
+			buf.append("int,int");
 			StringBuffer fullDesc = new StringBuffer();
+			fullDesc.append("int from, int to");
+			
 			Set<String> collArgs = current.getCollectionParms();
 			List<Object> constructorParms = new ArrayList<Object>();
+			constructorParms.add(current.ctx.start.getStartIndex());
+			constructorParms.add(current.ctx.stop.getStopIndex());
+			
 			Map<String,ArrayList<Object>> tempMap = new HashMap<String,ArrayList<Object>>();
 			children.forEach(a -> {
 				String argName = a.getArgName();
@@ -100,9 +106,9 @@ public class StructGenerator<T> extends YATLBaseListener {
 					
 			});
 			String parmTypes = buf.toString(); //constructorParms.stream().map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","));
-			parmTypes = parmTypes.isEmpty() ? parmTypes : parmTypes.substring(1); // Remove trailing comma
+			//parmTypes = parmTypes.isEmpty() ? parmTypes : parmTypes.substring(1); // Remove trailing comma
 			String fullParmTypes = fullDesc.toString();
-			fullParmTypes = fullParmTypes.isEmpty() ? fullParmTypes : fullParmTypes.substring(2); // Remove trailing comma
+			//fullParmTypes = fullParmTypes.isEmpty() ? fullParmTypes : fullParmTypes.substring(2); // Remove trailing comma
 
 			Class<T> currentClass = null;
 //			try {

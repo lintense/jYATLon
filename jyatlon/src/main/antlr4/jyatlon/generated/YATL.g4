@@ -1,3 +1,4 @@
+// THIS FILE MUST BE UTF-8
 // Define a grammar called Hello
 // https://www.antlr.org/tools.html
 // Instructions:
@@ -13,27 +14,27 @@ template
 	;
 	
 section
-	: '===' pathExp '===' '\n' line*
+	: SPACE* '===' SPACE* pathExp SPACE* '===' SPACE* NEWLINE line*
 	;
 	
 line
-	: lineExp* '\n'
+	: lineExp* NEWLINE
 	;
 	
 lineExp
-	: escapedChar | commentOp | value | controlExp | rawText | escapedBraket
+	: commentOp | escapedChar | value | controlExp | rawText | escapedBraket
 	;
 
 escapedChar
-	: '~' .
+	: ESCAPE .
 	;
 	
 escapedBraket
-	: ( '{' | '[' | '#' )
+	: ( LEFTCB | '[' | POUND )
 	;
 
 controlExp
-	: controlOp aliasName '}'
+	: LEFTCB controlOp SPACE+ aliasName SPACE* RIGHTCB
 	;
 
 controlOp
@@ -41,29 +42,29 @@ controlOp
 	;
 
 commentOp
-	: '###'
+	: POUND POUND POUND
 	;
 	
 rawText
-	: (~('\n' | '~' | '{' | '[' | '#'))+
+	: (~(NEWLINE | ESCAPE | LEFTCB | '[' | POUND))+
 	;
 
 value
-	: '{[' ifExp? callExp? valueExp ']}'
-	| '[' ifExp? callExp? valueExp ']'
+	: LEFTCB '[' SPACE* (ifExp SPACE+)? (callExp SPACE+)? valueExp SPACE* ']' RIGHTCB
+	| '[' SPACE* (ifExp SPACE+)? (callExp SPACE+)? valueExp SPACE* ']'
 	;
 	
 ifExp
-	: 'if' logicalExp
+	: IF SPACE+ logicalExp
 	;
 
 callExp
-	: 'call' pathExp
+	: CALL SPACE+ pathExp
 	;
 
 logicalExp
-	: binaryExp (logicalOp binaryExp)*
-	| '(' logicalExp ')'
+	: binaryExp (SPACE* logicalOp SPACE* binaryExp)*
+	| '(' SPACE* logicalExp SPACE* ')'
 	;
 
 logicalOp
@@ -71,8 +72,8 @@ logicalOp
 	;
 
 binaryExp
-	: unaryOp? valueExp (binaryOp valueExp)*
-	| '(' binaryExp ')'
+	: unaryOp? SPACE* valueExp (SPACE* binaryOp SPACE* valueExp)*
+	| '(' SPACE* binaryExp SPACE* ')'
 	;
 
 unaryOp
@@ -84,8 +85,8 @@ binaryOp
 	;
 
 valueExp
-	: valueArg (':' aliasName)? operation*
-	| '(' valueExp ')'
+	: valueArg (SPACE* ':' SPACE* aliasName)? SPACE* operation*
+	| '(' SPACE* valueExp SPACE* ')'
 	;
 	
 valueArg
@@ -93,11 +94,11 @@ valueArg
 	;
 	
 operation 
-	: '.' methodName ('(' argExp? ')')? (':' aliasName)?
+	: '.' SPACE? methodName (SPACE? '(' SPACE? argExp? SPACE? ')')? (SPACE? ':' SPACE? aliasName)?
 	;
 
 argExp
-	: valueExp (',' valueExp)*
+	: valueExp (SPACE? ',' SPACE? valueExp)*
 	;
 
 pathExp
@@ -135,20 +136,25 @@ aliasName
 
 
 ROOT			: '$';
-BEGIN			: '{begin';
-BEFORE			: '{before';
-BETWEEN			: '{between';
-AFTER			: '{after';
-END				: '{end';
-CALL			: '{call';
-IF				: '{if';
+BEGIN			: 'begin';
+BEFORE			: 'before';
+BETWEEN			: 'between';
+AFTER			: 'after';
+END				: 'end';
+CALL			: 'call';
+IF				: 'if';
 
+POUND			: '#' ;
+LEFTCB			: '{' ;
+RIGHTCB			: '}' ;
+ESCAPE			: '~' ;
 
 NEWLINE			: '\n';
 
+WS	: [\r]+    -> skip ;
 
 SPACE
-	: ( ' ' | '\t' | '\r' )
+	: ( ' ' | '\t' )
 	;
 
 NAME 
