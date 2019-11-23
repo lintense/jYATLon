@@ -1,5 +1,5 @@
 # j-YATL-on
-![Yet Another Template Language](https://github.com/lintense/jYATLon/img/logo.png)
+![Yet Another Template Language](https://github.com/lintense/jYATLon/blob/master/img/logo.png)
 ## *Yet Another Template Language...*
 
 ---
