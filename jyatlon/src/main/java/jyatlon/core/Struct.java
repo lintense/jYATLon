@@ -1,14 +1,24 @@
 package jyatlon.core;
 
 import java.io.Writer;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import jyatlon.generated.YATLParser;
 
 public abstract class Struct {
+	private static final String ALIAS_PREFIX = "_/";
+	private static final String ROOT = YATLParser.VOCABULARY.getLiteralName(YATLParser.ROOT).replace("'", "");
+	
 	public Struct(int from, int to) {
 		super();
 		this.from = from;
@@ -17,6 +27,9 @@ public abstract class Struct {
 
 	protected final int from;
 	protected final int to;
+	protected String getDefaultAlias(String alias) {
+		return alias != null ? alias : ALIAS_PREFIX + from;
+	}
 	// This looks promising, but the constructor calls won't be bound...so expect some runtime bugs
 	// To validate - No alias in binaryExp
 	// ...
@@ -28,6 +41,11 @@ public abstract class Struct {
 			super(from, to);
 			this.section = section;
 		}
+		public void test(Object root) {
+			Path rootPath = new Path(root.getClass().getSimpleName(), ROOT, root);
+			String obj = rootPath.toString();
+			section.forEach(s -> s.call(rootPath.add("String", getDefaultAlias(null), obj))); // TODO - String:Alias1, ...
+		}
 	}
 
 	public static class Section extends Struct {
@@ -38,6 +56,46 @@ public abstract class Struct {
 			this.pathExp = pathExp;
 			this.line = line;
 		}
+		public Stream<LineExp> getExpStream(){
+			return line.stream().flatMap(Line::getExpStream);
+		}
+		public Stream<Value> getValueStream(){
+			return getExpStream().filter(exp -> exp.value != null).map(exp -> exp.value);
+		}
+		public Stream<ControlExp> getControlStream(){
+			return getExpStream().filter(exp -> exp.controlExp != null).map(exp -> exp.controlExp);
+		}
+		public void call(Path rootPath) {
+			assert pathExp.isCompatible(rootPath);
+			
+			// Compute all values
+			List<Path> result = new ArrayList();
+			List<Value> values = getValueStream().collect(Collectors.toList());
+			values.forEach(v -> result.addAll(v.getValues(rootPath))); // FIXME this is probably wrong
+			result.forEach(r -> r.toString());
+		}
+//		public List<List<?>> getValues(Path path) throws Exception{ // runtime
+//			List<List<?>> results = new ArrayList<List<?>>();
+////			int index = 0;
+//			for (ValueCall c : calls) {
+////				if (results.isEmpty())
+////					results.add(c.getValues(null, root));
+////				else {
+//					List<List<?>> newResults = new ArrayList<List<?>>();
+//					for (List<?> previousResult : results) {
+//						List <?> currentValues = c.getValues(previousResult.get(index), root);
+//						for (Object o2 : currentValues) {
+//							List<Object> newResult = new ArrayList<Object>(previousResult);
+//							newResult.add(o2);
+//							newResults.add(newResult);
+//						}
+//					}
+//					results = newResults;
+//					index++;
+////				}
+//			}
+//			return results;
+//		}
 	}
 	
 	public static class Line extends Struct {
@@ -49,6 +107,13 @@ public abstract class Struct {
 		public Line(int from, int to, List<LineExp> lineExp){
 			super(from, to);
 			this.lineExp = lineExp;
+		}
+		public Stream<LineExp> getExpStream(){
+			AtomicBoolean ic = new AtomicBoolean(false);
+			return lineExp == null 
+				? Stream.empty() 
+				: lineExp.stream()
+					.filter(exp -> ic.getAndSet(exp.comment ? !ic.get() : ic.get()) || exp.comment); // Flip value on exp.comment  
 		}
 	}
 	
@@ -171,19 +236,51 @@ public abstract class Struct {
 			this.methodName = methodName;
 			this.argExp = null;
 			this.aliasName = null;
-		};
+		}
 		public Operation(int from, int to, String methodName, ArgExp argExp){
 			super(from, to);
 			this.methodName = methodName;
 			this.argExp = argExp;
 			this.aliasName = null;
-		};
+		}
 		public Operation(int from, int to, String methodName, ArgExp argExp, String aliasName){
 			super(from, to);
 			this.methodName = methodName;
 			this.argExp = argExp;
 			this.aliasName = aliasName;
-		};
+		}
+		public List<Path> appendValuePath(List<Path> inputPath) {
+			List<Path> result = new ArrayList();
+			for (Iterator<Path> i = inputPath.iterator(); i.hasNext();) {
+				Path p = i.next();
+				Object o = p.getObject();
+				if (o instanceof Collection<?>) {
+					Collection<?> c = (Collection<?>)o;
+					c.forEach(oc -> result.add(callOperation(p, oc)));
+				} else {
+					result.add(callOperation(p, o));
+				}
+			}
+			return result;
+		}
+		private Path callOperation(Path inputPath, Object o) {
+			Object response = null;
+			try {
+				try {
+					Method m = o.getClass().getDeclaredMethod(methodName);
+					response = m.invoke(o);
+				} catch (NoSuchMethodException e) {
+						String m2 = "get" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
+						Method m = o.getClass().getDeclaredMethod(m2);
+						response = m.invoke(o);
+				}
+			} catch (Exception e1) {
+				// FIXME - Auto-generated catch block
+				e1.printStackTrace();
+			}
+			return new Path(response.getClass().getSimpleName(), getDefaultAlias(aliasName), response);
+		}
+
 //		public List<?> getValues(Object o, Object root) throws Exception { // 
 //		Object x = oper.getValues(o, root);
 //		if (x == null && alias != null)
@@ -213,13 +310,14 @@ public abstract class Struct {
 //				return m.invoke(o);
 //			}
 //		}
-	};
+	}
 
 	// FIXME - operation should be a Collection
 	public static class ValueExp extends Struct {
 		private final String valueArg;
 		private final String aliasName;
 		private final List<Operation> operation;
+
 		public ValueExp(int from, int to, String valueArg){
 			super(from, to);
 			this.valueArg = valueArg;
@@ -238,6 +336,14 @@ public abstract class Struct {
 			this.aliasName = aliasName;
 			this.operation = operation;
 		}
+		public List<Path> getValues(Path rootPath) {
+			Object obj = rootPath.getValueForName(valueArg);
+			List<Path> result = new ArrayList();
+			result.add(new Path(null, aliasName != null ? aliasName : getDefaultAlias(aliasName), obj));
+			for (Iterator<Operation> i = operation.iterator(); i.hasNext();)
+				result = i.next().appendValuePath(result);
+			return result;
+		}
 		
 //		private List<String> myAliases(){
 //			List<String> result = new ArrayList<String>();
@@ -245,28 +351,7 @@ public abstract class Struct {
 //				result.add(c.alias);
 //			return result;
 //		}
-//		public List<List<?>> getValues(Object root) throws Exception{ // runtime
-//			List<List<?>> results = new ArrayList<List<?>>();
-//			int index = 0;
-//			for (ValueCall c : calls) {
-//				if (results.isEmpty())
-//					results.add(c.getValues(null, root));
-//				else {
-//					List<List<?>> newResults = new ArrayList<List<?>>();
-//					for (List<?> previousResult : results) {
-//						List <?> currentValues = c.getValues(previousResult.get(index), root);
-//						for (Object o2 : currentValues) {
-//							List<Object> newResult = new ArrayList<Object>(previousResult);
-//							newResult.add(o2);
-//							newResults.add(newResult);
-//						}
-//					}
-//					results = newResults;
-//					index++;
-//				}
-//			}
-//			return results;
-//		}
+
 
 //		@Override
 //		public void print(Writer w, Object root) throws Exception {
@@ -301,7 +386,7 @@ public abstract class Struct {
 			super(from, to);
 			this.valueExp = valueExp;
 		};
-	};
+	}
 
 	// FIXME - binaryOp should be a Collection
 	// FIXME - valueExp should be a Collection
@@ -313,7 +398,7 @@ public abstract class Struct {
 			this.valueExp = valueExp;
 			this.binaryOp = binaryOp;
 		};
-	};
+	}
 
 	// FIXME - logicalOp should be a Collection
 	// FIXME - binaryExp should be a Collection
@@ -325,31 +410,32 @@ public abstract class Struct {
 			this.binaryExp = binaryExp;
 			this.logicalOp = logicalOp;
 		};
-	};
-
+	}
 	private static class IfExp extends Struct {
 		private final LogicalExp logicalExp;
 		public IfExp(int from, int to, LogicalExp logicalExp){
 			super(from, to);
 			this.logicalExp = logicalExp;
 		};
-	};
+	}
 
-	// FIXME - pathName should be a Collection
 	private static class PathExp extends Struct {
-		private final String anyPathOp;
+		private final boolean isAbsolute;
 		private final List<String> pathName;
 		public PathExp(int from, int to, List<String> pathName) {
 			super(from, to);
-			this.anyPathOp = null;
+			this.isAbsolute = true;
 			this.pathName = pathName;
 		}
 		public PathExp(int from, int to, String anyPathOp, List<String> pathName){
 			super(from, to);
-			this.anyPathOp = anyPathOp;
+			this.isAbsolute = false;
 			this.pathName = pathName;
 		};
-	};
+		public boolean isCompatible(Path path) {
+			return path.compatibility(pathName, isAbsolute) > 0;
+		}
+	}
 
 	private static class CallExp extends Struct {
 		private final PathExp pathExp;
@@ -357,7 +443,7 @@ public abstract class Struct {
 			super(from, to);
 			this.pathExp = pathExp;
 		};
-	};
+	}
 
 	private static class Value extends Struct {
 		private final IfExp ifExp;
@@ -369,5 +455,9 @@ public abstract class Struct {
 			this.callExp = callExp;
 			this.valueExp = valueExp;
 		};
-	};
+		public List<Path> getValues(Path rootPath) {
+			return valueExp.getValues(rootPath);
+		}
+	}
 }
+

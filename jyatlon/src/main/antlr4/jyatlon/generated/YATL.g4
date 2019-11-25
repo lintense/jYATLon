@@ -106,7 +106,7 @@ pathExp
 	;
 
 anyPathOp
-	: '...' ( '\\' | '/' )
+	: ANYPATH ( '\\' | '/' )
 	;
 
 pathName
@@ -134,8 +134,8 @@ aliasName
 //	;
 
 
+ANYPATH			: '...' ;
 
-ROOT			: '$';
 BEGIN			: 'begin';
 BEFORE			: 'before';
 BETWEEN			: 'between';
@@ -144,6 +144,7 @@ END				: 'end';
 CALL			: 'call';
 IF				: 'if';
 
+ROOT			: '$';
 POUND			: '#' ;
 LEFTCB			: '{' ;
 RIGHTCB			: '}' ;

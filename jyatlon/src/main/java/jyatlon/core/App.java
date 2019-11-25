@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLListener;
 import jyatlon.generated.YATLParser;
@@ -58,8 +59,8 @@ public class App {
         		*/
 //---------------------
 		UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream((
-" === path/Exp ===\n\n\n" +
-" a b### {}[]~c [if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)]x{begin X}yz\n").getBytes()));
+" === String ===\n\n\n" +
+" a b### {}[begin]~c [if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)]x{begin X}yz\n").getBytes()));
         
 		YATLLexer lexer = new YATLLexer(input);
         lexer.setTokenFactory(new CommonTokenFactory(true));
@@ -73,7 +74,8 @@ public class App {
         walker.walk(myListener, tree);
         Struct struct = myListener.getStruct(); // java.util.EmptyStackException
         
-        
+        Template t = (Template)struct;
+        t.test(t);
 	}
     void merge(){
     	
