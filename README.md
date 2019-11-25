@@ -1,20 +1,20 @@
-# Note: This project has just been started and it merely compiles... 
----
+#Note: This project has just been started and it merely compiles...
+
+## *But in case you are interested, here is a brief presentation*
 
 # j-YATL-on
-![Yet Another Template Language](https://github.com/lintense/jYATLon/blob/master/img/logo.png)
+![Yet Another Template Language](img\logo.png)
 ## *Yet Another Template Language...*
 
----
 ### Why YATL?
 Most current template language are procedural, so they look like code, not like template... So they are (at times) hard to understand and need to be debugged, just like code!
 So what about a new *declarative* templating language build from the groud up to look just like a *real* template language?
 Doing so would provide the following benefits:
 
 - **Clarity:** No `${#if#elseif#endif}` gibberish.
-- **Java 8 compatibility:** Because some of us are not yet cutting edge!
-- **Simplicity:** Easy to understand, easy to adapt!
-- **Performance**... when possible!
+- **Java 8 compatibility:** To accomodate existing projects.
+- **Light & simple:** Easy to understand, easy to adapt!
+- **Performance**... whenever possible!
 - **No dependency**
 
 ### <a id="running"></a>Running the program
@@ -24,25 +24,25 @@ Doing so would provide the following benefits:
 YATL yatl = YATL.getTemplate("filename");
 Object root = "World"; // This is the root context
 Writer writer = new StringWriter();
-yatl.merge(root, writer);
+yatl.merge(root, writer); // The same as Velocity!
 ```
 ### Tutorial
-- YATL is intended to be the simplest templating language possible. This is why it does only one thing, hopefully well!
+- YATL is intended to be the simplest templating language possible. This is why it does this one thing, hopefully well!
 - As a general rule, all [values](#value) and [commands](#command) **MUST** begin and end on the same line.
-- Also, be aware that spaces are not allowed inside [value](#value) expressions, [commands](#command) and [paths](#path).
+- Also, be aware that spaces are not allowed inside [value expressions](#value), [commands](#command) and [paths](#path).
 
 #### <a id="root"></a>Root context
 - The root context aka `$` refers to the argument that is passed when launching the template engine. (See [running the program](#running) above)
-- It is recommended that you have full control over the root object so you can implement any special formating services that you may need.
+- It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL will not implement complex computations...
 
 #### <a id="value"></a>Value
-- A value is the result of an expression enclosed in brackets `[]`.
+- A value is an expression enclosed in brackets `[]`.
 - It can be a constant: `['any text']` or `["I'm a text!"]`
-- The result of the expression will be written at that position.
-- The value expression always starts with any of: the [root](#root), a [path](#path) or an [alias](#alias). Then, you may apply any functions that exist for this object and so on. For exemple you could do `[$.toString]` or `[$.toString.substring(1,4)]`.
+- The result of the value expression is always inserted where it is located in the text.
+- A value expression always starts with any of: the [root](#root), a [path](#path) or an [alias](#alias). Then, you may apply any methods that exist for this object and so on. For exemple you can do `[$.toString]` or `[$.toString.substring(1,4)]`.
 - You can invoke the accessors with `[$.getSize()]` or `[$.getSize]` or even `[$.size]` if you prefer.
-- If the result of a value expression can be empty or is any kind of collection, then the value **MUST** have an [alias](#alias) and **MUST** be enclosed in a [block](#block) .
-- A value expression **MUST NOT** contain spaces.
+- If the result of a value expression can be empty or is any kind of collection, then the value **SHOULD** have an [alias](#alias) and **SHOULD** be enclosed in a [block](#block).
+- A value expression **MUST NOT** contain spaces. Be sure you remember cause we will not tell you again!
 - Alternative notation for value, in case you need it `{[ 'same value' ]}`.
 
 ##### Conditional output
@@ -56,12 +56,6 @@ yatl.merge(root, writer);
 - The `indexOf` function returns the index of the current [value](#value) starting by `1`: `[indexOf($.val)]`.
  - The `sizeOf` function returns the number of [values](#value) that are visible for the [alias](#alias): `[sizeOf($.val:ALIAS)]`.
 - `Collection` functions may be used inside a condition: `[if indexOf($.val) == 1 'First:']`.
-- Conditional outputs have **no impact** on the final size of the `Collection`. [Values](#value) that are not activated are considered to be [optional aliases](#matching)
-
-
-But when computing the size, all the conditional [values](#value) are considered true. This is because
-`sizeOf` a `Collection`, all the elements are taken into account, not only the 
-
 
 #### <a id="alias"></a>Alias
 - You may assign an alias to any part of the expression of a [value](#value). For exemple `[$:ROOT.toString:ROOT_AGAIN.substring(1,4):PART_OF_ROOT]`.
@@ -246,13 +240,10 @@ T0 // This is the normal text for this document
 - Notepad++ is a very handy companion when editing your template scripts. Simply double click on any [alias](#alias) to immediately visualize their structure.
 
 ### Future developments
-- Have a nice mecanism for error message handling ERROR_P1_P2
-- Use a writer when compiling instead of loggers.
-- Detect ~ cannot be used inside COMMANDS and VALUES (except {begin ‘...’})
-- Detect any { before the enclosing }
-- When parsing {, could check for valid COMMAND names to avoid using ~
+- Have a nice mecanism for error message handling.
+- Should it use loggers or writers to dump the errors?
 - Have a trace to follow the order of calling to debug the command calls
 - Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
-- Regex to validade alias names. [A-Za-z_0-9]*
+
 
 

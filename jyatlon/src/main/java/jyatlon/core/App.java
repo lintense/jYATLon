@@ -84,3 +84,13 @@ public class App {
     	
     }
 }
+/*
+    Have a nice mecanism for error message handling ERROR_P1_P2
+    Use a writer when compiling instead of loggers.
+    Detect ~ cannot be used inside COMMANDS and VALUES (except {begin ‘...’})
+    Detect any { before the enclosing }
+    When parsing {, could check for valid COMMAND names to avoid using ~
+    Have a trace to follow the order of calling to debug the command calls
+    Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
+    Regex to validade alias names. [A-Za-z_0-9]*
+*/
