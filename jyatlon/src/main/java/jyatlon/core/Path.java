@@ -28,7 +28,7 @@ public class Path {
 		this.classes = new String[] {pathName};
 		this.objects = new Object[] {obj};
 	}
-	private Path(String[] classes, String[] aliases, Object[] objects) {
+	protected Path(String[] classes, String[] aliases, Object[] objects) {
 		assert classes.length == aliases.length && aliases.length == objects.length;
 		// Classes and objects arrays must match
 		assert IntStream.range(1, objects.length).filter(i -> objects[i].getClass().getSimpleName().equals(classes[i])).count() == objects.length - 1;
@@ -76,5 +76,20 @@ public class Path {
 		
 		throw new IllegalArgumentException("The name '" + valueArg + "' does not exist in the current scope.");
 	}
+	public static class CallPath extends Path {
 
+		public CallPath(String pathName, String pathAlias, Object obj) {
+			super(pathName, pathAlias, obj);
+			// TODO Auto-generated constructor stub
+		}
+		
+	}
+	public static class ValuePath extends Path {
+
+		public ValuePath(String pathName, String pathAlias, Object obj) {
+			super(pathName, pathAlias, obj);
+			// TODO Auto-generated constructor stub
+		}
+		
+	}
 }

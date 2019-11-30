@@ -14,7 +14,8 @@ template
 	;
 	
 section
-	: SPACE* '===' SPACE* pathExp SPACE* '===' SPACE* NEWLINE line*
+	: SPACE* EQUAL EQUAL EQUAL SPACE* pathExp SPACE* EQUAL EQUAL EQUAL SPACE* NEWLINE line*
+	| EQUAL ROOT EQUAL NEWLINE line*
 	;
 	
 line
@@ -46,7 +47,7 @@ commentOp
 	;
 	
 rawText
-	: (~(NEWLINE | ESCAPE | LEFTCB | '[' | POUND))+
+	: (~(EQUAL | NEWLINE | ESCAPE | LEFTCB | '[' | POUND))+
 	;
 
 value
@@ -81,11 +82,11 @@ unaryOp
 	;
 
 binaryOp
-	: '!=' | '==' | '>' | '>=' | '<' | '<=' | '<>'
+	: '!' EQUAL | EQUAL EQUAL | '>' | '>' EQUAL | '<' | '<' EQUAL | '<>'
 	;
 
 valueExp
-	: valueArg (SPACE* ':' SPACE* aliasName)? SPACE* operation*
+	: valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation*
 	| '(' SPACE* valueExp SPACE* ')'
 	;
 	
@@ -94,11 +95,11 @@ valueArg
 	;
 	
 operation 
-	: '.' SPACE? methodName (SPACE? '(' SPACE? argExp? SPACE? ')')? (SPACE? ':' SPACE? aliasName)?
+	: '.' SPACE? methodName (SPACE? '(' SPACE? argExp? SPACE? ')')? (SPACE? COLON SPACE? aliasName)?
 	;
 
 argExp
-	: valueExp (SPACE? ',' SPACE? valueExp)*
+	: valueExp (SPACE? COMMA SPACE? valueExp)*
 	;
 
 pathExp
@@ -149,7 +150,10 @@ POUND			: '#' ;
 LEFTCB			: '{' ;
 RIGHTCB			: '}' ;
 ESCAPE			: '~' ;
+EQUAL			: '=' ;
 
+COMMA			: ',' ;
+COLON			: ':' ;
 NEWLINE			: '\n';
 
 WS	: [\r]+    -> skip ;

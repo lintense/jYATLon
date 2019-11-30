@@ -13,14 +13,18 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import jyatlon.core.Struct.Template;
+import jyatlon.dev.StructGen;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLListener;
 import jyatlon.generated.YATLParser;
 
-public class App {
+public class App { // Rename to YATL
 
     public static void main( String[] args )
     {
+    	
+    	//generateStruct();
+    	
     	/*
         ANTLRInputStream inputStream = new ANTLRInputStream(
             "hello you");
@@ -69,7 +73,8 @@ public class App {
         ParseTree tree = parser.template(); // begin parsing at rule 'r'
 //        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         
-        StructGenerator<Struct> myListener = new StructGenerator<Struct>(Struct.class); //MyListener(); //
+        StructInitializer initializer = new StructInitializer();
+        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class, initializer); //MyListener(); //
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(myListener, tree);
         Struct struct = myListener.getStruct(); // java.util.EmptyStackException
@@ -77,20 +82,43 @@ public class App {
         Template t = (Template)struct;
         t.test(t);
 	}
+    public static Template getTemplate(String template) {
+    	String actualTemplate = "=$=\n" + template + "\n";
+    	UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream(actualTemplate.getBytes()));
+    	YATLLexer lexer = new YATLLexer(input);
+        lexer.setTokenFactory(new CommonTokenFactory(true));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        YATLParser parser = new YATLParser(tokens);
+        ParseTree tree = parser.template(); // begin parsing at rule 'r'
+//        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+        
+        StructInitializer initializer = new StructInitializer();
+        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class, initializer); //MyListener(); //
+        ParseTreeWalker walker = new ParseTreeWalker();
+        walker.walk(myListener, tree);
+        Struct struct = myListener.getStruct(); // java.util.EmptyStackException
+        return (Template)struct;
+    }
     void merge(){
     	
     	// Always add ===$=== at the beginning of the file
     	// Always add '\n' \ at the end
     	
     }
+    public static void generateStruct() {
+    	StructGen<YATLParser> gen = new StructGen<YATLParser>(YATLParser.class);
+    	StringBuilder sb = new StringBuilder();
+    	gen.extractStruct(sb);
+    	System.out.println(sb.toString());
+    }
 }
 /*
-    Have a nice mecanism for error message handling ERROR_P1_P2
+    Have a nice mechanism for error message handling ERROR_P1_P2
     Use a writer when compiling instead of loggers.
     Detect ~ cannot be used inside COMMANDS and VALUES (except {begin ‘...’})
     Detect any { before the enclosing }
     When parsing {, could check for valid COMMAND names to avoid using ~
     Have a trace to follow the order of calling to debug the command calls
     Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
-    Regex to validade alias names. [A-Za-z_0-9]*
+    Regex to validate alias names. [A-Za-z_0-9]*
 */

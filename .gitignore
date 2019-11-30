@@ -2,3 +2,6 @@ target
 /.metadata/
 .metadata
 .settings
+/jyatlon/src/test/resources/test1.txt
+/jyatlon/src/test/resources/test2.txt
+/jyatlon/src/test/resources/test3.txt

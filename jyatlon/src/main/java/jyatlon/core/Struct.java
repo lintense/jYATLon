@@ -1,14 +1,15 @@
 package jyatlon.core;
 
-import java.io.Writer;
-import java.lang.reflect.InvocationTargetException;
+// TODO All final List should be set to immutable
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,14 +20,31 @@ public abstract class Struct {
 	private static final String ALIAS_PREFIX = "_/";
 	private static final String ROOT = YATLParser.VOCABULARY.getLiteralName(YATLParser.ROOT).replace("'", "");
 	
+	protected final Map<String,Object> properties = new HashMap<String,Object>();
+	protected final int from;
+	protected final int to;
+	
 	public Struct(int from, int to) {
 		super();
 		this.from = from;
 		this.to = to;
 	}
-
-	protected final int from;
-	protected final int to;
+	public void init(StructInitializer initializer) {
+		// To be overridden by subclasses when necessary
+	}
+	public Object getProperty(String key) {
+		return properties.get(key);
+	}
+	public List<Struct> getStructList(String key) {
+		return (List<Struct>)properties.get(key);
+	}
+	public Map<String,Struct> getStructMap(String key) {
+		return (Map<String,Struct>)properties.get(key);
+	}
+	public void setProperty(String key, Object value) {
+		properties.put(key, value);
+	}
+	
 	protected String getDefaultAlias(String alias) {
 		return alias != null ? alias : ALIAS_PREFIX + from;
 	}
@@ -36,7 +54,7 @@ public abstract class Struct {
 	
 	
 	public static class Template extends Struct {
-		private final List<Section> section;
+		final List<Section> section;
 		public Template(int from, int to, List<Section> section){
 			super(from, to);
 			this.section = section;
@@ -46,15 +64,36 @@ public abstract class Struct {
 			String obj = rootPath.toString();
 			section.forEach(s -> s.call(rootPath.add("String", getDefaultAlias(null), obj))); // TODO - String:Alias1, ...
 		}
+		public void init(StructInitializer initializer) { // calling init must be done by subclass for Dynamic Method Dispatch to work
+			initializer.init(this);
+		}
 	}
 
 	public static class Section extends Struct {
-		private final PathExp pathExp;
-		private final List<Line> line;
+		final PathExp pathExp;
+		final List<Line> line;
+		public Section(int from, int to) {
+			super(from, to);
+			this.pathExp = null;
+			this.line = null;
+		}
+		public Section(int from, int to, PathExp pathExp) {
+			super(from, to);
+			this.pathExp = pathExp;
+			this.line = null;
+		}
+		public Section(int from, int to, List<Line> line){
+			super(from, to);
+			this.pathExp = null;
+			this.line = line;	
+		}
 		public Section(int from, int to, PathExp pathExp, List<Line> line){
 			super(from, to);
 			this.pathExp = pathExp;
-			this.line = line;
+			this.line = line;	
+		}
+		public void init(StructInitializer initializer) { // calling init must be done by subclass for Dynamic Method Dispatch to work
+			initializer.init(this);
 		}
 		public Stream<LineExp> getExpStream(){
 			return line.stream().flatMap(Line::getExpStream);
@@ -99,7 +138,7 @@ public abstract class Struct {
 	}
 	
 	public static class Line extends Struct {
-		private final List<LineExp> lineExp;
+		final List<LineExp> lineExp;
 		public Line(int from, int to){
 			super(from, to);
 			this.lineExp = null;
@@ -115,15 +154,18 @@ public abstract class Struct {
 				: lineExp.stream()
 					.filter(exp -> ic.getAndSet(exp.comment ? !ic.get() : ic.get()) || exp.comment); // Flip value on exp.comment  
 		}
+		public void init(StructInitializer initializer) { // calling init must be done by subclass for Dynamic Method Dispatch to work
+			initializer.init(this);
+		}
 	}
 	
 	public static class LineExp extends Struct {
-		private final RawText rawText;
-		private final Value value;
-		private final boolean comment;
-		private final EscapedChar escapedChar;
-		private final EscapedBraket escapedBraket;
-		private final ControlExp controlExp;
+		final RawText rawText;
+		final Value value;
+		final boolean comment;
+		final EscapedChar escapedChar;
+		final EscapedBraket escapedBraket;
+		final ControlExp controlExp;
 		public LineExp(int from, int to, RawText rawText) {
 			super(from, to);
 			this.rawText = rawText;
@@ -204,22 +246,6 @@ public abstract class Struct {
 		}
 	}
 
-//	public static class LineExp extends Struct {
-//		List<RawText> rawText;
-//		private final List<Value> value;
-//		public LineExp() {
-//			this.rawText = null;
-//			this.value = null;
-//		}
-//		public LineExp(List<Value> value) {
-//			this.rawText = null;
-//			this.value = value;
-//		}
-//		public LineExp(List<RawText> rawText, List<Value> value){
-//			this.rawText = rawText;
-//			this.value = value;
-//		}
-//	}
 	public static class RawText extends Struct {
 		public RawText(int from, int to) {
 			super(from, to);
@@ -228,9 +254,9 @@ public abstract class Struct {
 	}
 	
 	public static class Operation extends Struct {
-		private final String methodName;
-		private final ArgExp argExp;
-		private final String aliasName;
+		final String methodName;
+		final ArgExp argExp;
+		final String aliasName;
 		public Operation(int from, int to, String methodName){
 			super(from, to);
 			this.methodName = methodName;
@@ -263,7 +289,7 @@ public abstract class Struct {
 			}
 			return result;
 		}
-		private Path callOperation(Path inputPath, Object o) {
+		private Path callOperation(Path inputPath, Object o) { // TODO - Implement MAP
 			Object response = null;
 			try {
 				try {
@@ -312,11 +338,10 @@ public abstract class Struct {
 //		}
 	}
 
-	// FIXME - operation should be a Collection
 	public static class ValueExp extends Struct {
-		private final String valueArg;
-		private final String aliasName;
-		private final List<Operation> operation;
+		final String valueArg;
+		final String aliasName;
+		final List<Operation> operation;
 
 		public ValueExp(int from, int to, String valueArg){
 			super(from, to);
@@ -379,20 +404,17 @@ public abstract class Struct {
 //		}
 	};
 
-	// FIXME - valueExp should be a Collection
 	public static class ArgExp extends Struct {
-		private final List<ValueExp> valueExp;
+		final List<ValueExp> valueExp;
 		public ArgExp(int from, int to, List<ValueExp> valueExp){
 			super(from, to);
 			this.valueExp = valueExp;
 		};
 	}
 
-	// FIXME - binaryOp should be a Collection
-	// FIXME - valueExp should be a Collection
 	private static class BinaryExp extends Struct {
-		private final List<ValueExp> valueExp;
-		private final List<String> binaryOp;
+		final List<ValueExp> valueExp;
+		final List<String> binaryOp;
 		public BinaryExp(int from, int to, List<ValueExp> valueExp, List<String> binaryOp){
 			super(from, to);
 			this.valueExp = valueExp;
@@ -400,11 +422,9 @@ public abstract class Struct {
 		};
 	}
 
-	// FIXME - logicalOp should be a Collection
-	// FIXME - binaryExp should be a Collection
 	private static class LogicalExp extends Struct {
-		private final List<BinaryExp> binaryExp;
-		private final List<String> logicalOp;
+		final List<BinaryExp> binaryExp;
+		final List<String> logicalOp;
 		public LogicalExp(int from, int to, List<BinaryExp> binaryExp, List<String> logicalOp){
 			super(from, to);
 			this.binaryExp = binaryExp;
@@ -412,7 +432,7 @@ public abstract class Struct {
 		};
 	}
 	private static class IfExp extends Struct {
-		private final LogicalExp logicalExp;
+		final LogicalExp logicalExp;
 		public IfExp(int from, int to, LogicalExp logicalExp){
 			super(from, to);
 			this.logicalExp = logicalExp;
@@ -420,8 +440,8 @@ public abstract class Struct {
 	}
 
 	private static class PathExp extends Struct {
-		private final boolean isAbsolute;
-		private final List<String> pathName;
+		final boolean isAbsolute;
+		final List<String> pathName;
 		public PathExp(int from, int to, List<String> pathName) {
 			super(from, to);
 			this.isAbsolute = true;
@@ -438,7 +458,7 @@ public abstract class Struct {
 	}
 
 	private static class CallExp extends Struct {
-		private final PathExp pathExp;
+		final PathExp pathExp;
 		public CallExp(int from, int to, PathExp pathExp){
 			super(from, to);
 			this.pathExp = pathExp;
@@ -446,9 +466,9 @@ public abstract class Struct {
 	}
 
 	private static class Value extends Struct {
-		private final IfExp ifExp;
-		private final CallExp callExp;
-		private final ValueExp valueExp;
+		final IfExp ifExp;
+		final CallExp callExp;
+		final ValueExp valueExp;
 		public Value(int from, int to, IfExp ifExp, CallExp callExp, ValueExp valueExp){
 			super(from, to);
 			this.ifExp = ifExp;

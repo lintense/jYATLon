@@ -1,7 +1,6 @@
 package jyatlon.core;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,17 +29,18 @@ import jyatlon.generated.YATLBaseListener;
  * All names ending by "Exp" are considered to have a terminal Collection arg.
  * Always wrap Terminals so we can drop them
  * Use literals instead of ALIASES gives better error messages on parsing errors
- *
+ * TODO - Could be improved to return all the possible constructor which would avoid runtime errors
  */
-public class StructGenerator<T> extends YATLBaseListener {
-	public StructGenerator(Class<T> strucType) {
+public class StructBuilder<T> extends YATLBaseListener {
+	public StructBuilder(Class<T> strucType, StructInitializer initializer) {
 		super();
 		this.strucType = strucType;
+		this.initializer = initializer;
 	}
 	private static final char INNER_CLASS_SEPARATOR = '$';
 	private final Class<T> strucType;
-//	HashMap<String,Rule> rules = new HashMap<String,Rule>();
 	private final Stack<Base> args = new Stack<Base>();
+	private final StructInitializer initializer;
 
 	public T getStruct() {
 		return args.peek() != null && strucType.isAssignableFrom(args.peek().getValue().getClass()) 
@@ -95,7 +95,7 @@ public class StructGenerator<T> extends YATLBaseListener {
 						constructorParms.add(coll);
 						coll.add(a.getValue());
 						tempMap.put(argName, coll);
-						buf.append(",List"); //<" + a.getType() + ">");
+						buf.append(",List");
 						fullDesc.append(", List<" + a.getType() + "> " + argName);
 					}
 				} else {
@@ -106,12 +106,8 @@ public class StructGenerator<T> extends YATLBaseListener {
 					
 			});
 			String parmTypes = buf.toString(); //constructorParms.stream().map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","));
-			//parmTypes = parmTypes.isEmpty() ? parmTypes : parmTypes.substring(1); // Remove trailing comma
 			String fullParmTypes = fullDesc.toString();
-			//fullParmTypes = fullParmTypes.isEmpty() ? fullParmTypes : fullParmTypes.substring(2); // Remove trailing comma
-
 			Class<T> currentClass = null;
-//			try {
 				// Select the correct constructor
 				Constructor<T> matchingConstructor = null;
 				currentClass = getSubclassForName(current.extractStructName());
@@ -135,69 +131,29 @@ public class StructGenerator<T> extends YATLBaseListener {
 						else
 							test = matchingConstructor.newInstance(constructorParms.toArray());
 						current = new Struct((jyatlon.core.Struct)test);
-					} catch (InstantiationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IllegalArgumentException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (InvocationTargetException e) {
-						// TODO Auto-generated catch block
+						current.init(initializer);
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				} else
 					throw new IllegalStateException("Missing constructor: " + strucType.getName() + INNER_CLASS_SEPARATOR + current.extractStructName() + "(" + fullParmTypes + ")");
-//			} catch (ClassNotFoundException e) {
-//				throw new IllegalStateException("Missing class: " + strucType.getName() + INNER_CLASS_SEPARATOR + current.extractStructName());
-//			}
 		}
-		
-//		String key = current.getKey();
-//		if (!rules.containsKey(key)){
-//			if (!children.isEmpty() && !parentesis) {
-//				current.showConstructor();
-//			}
-//			rules.put(key, current); // Avoid repeating the same Constructor
-//		}
-		
 		args.push(current);
 	}
 
-//    public static String convertArrayToString(TypeVariable[] a) {
-//
-//        return Arrays.stream(a).map(b -> b.getTypeName()).collect(Collectors.joining(","));
-//
-//    }
-//	boolean conforms(Type[] a, Type[] b) {
-//		if (a.length == b.length) {
-//			for (int i = 0; i < a.length; i++)
-//				if (!a[i].getTypeName().equals(b[i].getTypeName()) || !conforms(((Class)a[i]).getTypeParameters(), ((Class)b[i]).getTypeParameters()))
-//					return false;
-//			return true;
-//		} else
-//			return false;
-//	}
-
 	@Override public void visitTerminal(TerminalNode node) { // Not needed, all useful is wrapped so terminals can be dropped
 		args.push(new Node(node)); // Still we must push something here to match the child count!
-//		System.out.println("NODE " + node.getText());
 	}
 
-
-
-	// TODO move to Rule
-
-	
 	private static abstract class Base {
 		abstract String getType();
-//		abstract String getArg();
 		boolean isTerminal() {
 			return false;
 		}
 		abstract Object getValue();
+		void init(StructInitializer initializer){
+			throw new IllegalStateException("To be implemented by subclass");
+		}
 	}
 	private static class Struct extends Rule {
 		private final jyatlon.core.Struct struct;
@@ -207,7 +163,6 @@ public class StructGenerator<T> extends YATLBaseListener {
 			if (struct == null)
 				throw new IllegalArgumentException();
 		}
-
 		@Override
 		String getType() {
 			return extractStructName();
@@ -218,6 +173,9 @@ public class StructGenerator<T> extends YATLBaseListener {
 		}
 		String extractStructName() {
 			return struct.getClass().getSimpleName();
+		}
+		void init(StructInitializer initializer){
+			struct.init(initializer);
 		}
 	}
 	private static class Rule extends Base {
@@ -245,10 +203,10 @@ public class StructGenerator<T> extends YATLBaseListener {
 		boolean isString() {
 			return getRuleType(extractStructName()).equals("String");
 		}
-		String getKey() {
-			String count = "00000" + children.size();
-			return extractStructName() + count.substring(count.length() - 4);
-		}
+//		String getKey() {
+//			String count = "00000" + children.size();
+//			return extractStructName() + count.substring(count.length() - 4);
+//		}
 		String getArgName() {
 			return lowerFirst(extractStructName());
 		}
@@ -291,9 +249,6 @@ public class StructGenerator<T> extends YATLBaseListener {
 		boolean isTerminal() {
 			return true;
 		}
-//		String getArg() {
-//			return null;
-//		}
 		@Override
 		Object getValue() {
 			return node.getText();

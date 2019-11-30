@@ -28,11 +28,11 @@ yatl.merge(root, writer); // The same as Velocity!
 ```
 ### Tutorial
 - YATL is intended to be the simplest templating language possible. This is why it does this one thing, hopefully well!
-- As a general rule, all [values](#value) and [commands](#command) **MUST** begin and end on the same line.
+- As a general rule, all [values](#value), [commands](#command) and [comments](#comment) begin and end on the same line.
 - Also, be aware that spaces are not allowed inside [value expressions](#value), [commands](#command) and [paths](#path).
 
 #### <a id="root"></a>Root context
-- The root context aka `$` refers to the argument that is passed when launching the template engine. (See [running the program](#running) above)
+- The root context aka `$` refers to the object that is provided when launching the template engine. (See [running the program](#running) above)
 - It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL will not implement complex computations...
 
 #### <a id="value"></a>Value
@@ -226,13 +226,13 @@ T0 // This is the normal text for this document
 123### // Will output 123 without a new line
 123###456### // Will output 123 WITH a new line (and this java comment!!!)
 ```
-- The **escape** character `~` will make any single following character, including itself, to be treated as normal text.
+- The **escape** character `~` will make any immediately following character, including itself, to be treated as normal text. This is the only character that always need to be escaped.
 - Whenever possible, the engine will try to escape the invalid char sequences for you.
 ```javascript
 ~{begin test~}### // Will output {begin test} (without this comment!)
 ```
-- Any empty line before and after a [path](#path) header **will be ignored**.
-- When a line ends with a `{control}` the following new line **will be ignored**.
+- Any empty line immediately before and after a [path block](#path) header **will be ignored**.
+- When a line ends with a `{control}` the immediately following new line **will be ignored**.
 ```javascript
 {begin ALIAS} 
 [ALIAS] // No new line added before the value!
