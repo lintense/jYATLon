@@ -7,14 +7,15 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+//import org.mockito.runners.MockitoJUnitRunner;
 
 import jyatlon.test.utilities.CompareString;
 import jyatlon.test.utilities.ObjectTree;
 import jyatlon.test.utilities.TestUtils;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(JUnitPlatform.class)
 class AppTest {
 
 //	@Test
