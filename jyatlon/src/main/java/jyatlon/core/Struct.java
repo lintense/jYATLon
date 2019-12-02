@@ -215,7 +215,7 @@ public abstract class Struct {
 			super(from, to);
 			this.rawText = null;
 			this.value = null;
-			this.comment = true;
+			this.comment = false;
 			this.escapedChar = null;
 			this.escapedBraket = null;
 			this.controlExp = controlExp;

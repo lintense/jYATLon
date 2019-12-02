@@ -26,13 +26,13 @@ class AppTest {
 	void testParsing1() throws IOException {
 		System.out.println("testParsing1()");
 		String t = " === String ===\n\n\n" +
-				" a b### {}[begin]~c [if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)]x{begin X}yz\n";
+				" a b### {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
 		
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
 		ObjectTree.dumpObject(App.getTemplate(t), ps);
 		String obtained = baos.toString();
-		TestUtils.saveToFile("test1.txt", obtained);
+		TestUtils.saveToFile("testParsing1.last.txt", obtained);
 		assertTrue(CompareString.compareFileToString(TestUtils.getResource("testParsing1.txt"), obtained));
 	}
 	@Test
@@ -43,8 +43,8 @@ class AppTest {
 		PrintStream ps = new PrintStream(baos);
 		ObjectTree.dumpObject(App.getTemplate(t), ps);
 		String obtained = baos.toString();
-		TestUtils.saveToFile("test2.txt", obtained);
-//		assertTrue(CompareString.compareFileToString(TestUtils.getResource("testParsing1.txt"), obtained));
+		TestUtils.saveToFile("testSectionLines.last.txt", obtained);
+		assertTrue(CompareString.compareFileToString(TestUtils.getResource("testSectionLines.txt"), obtained));
 	}
 	@Test
 	void testInitControls() throws IOException {
@@ -54,7 +54,7 @@ class AppTest {
 		PrintStream ps = new PrintStream(baos);
 		ObjectTree.dumpObject(App.getTemplate(t), ps);
 		String obtained = baos.toString();
-		TestUtils.saveToFile("test3.txt", obtained);
+		TestUtils.saveToFile("testInitControls.last.txt", obtained);
 		assertTrue(CompareString.compareFileToString(TestUtils.getResource("testInitControls.txt"), obtained));
 	}
 }

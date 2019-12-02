@@ -76,18 +76,6 @@ public class YATLBaseListener implements YATLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterEscapedBraket(YATLParser.EscapedBraketContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitEscapedBraket(YATLParser.EscapedBraketContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterControlExp(YATLParser.ControlExpContext ctx) { }
 	/**
 	 * {@inheritDoc}

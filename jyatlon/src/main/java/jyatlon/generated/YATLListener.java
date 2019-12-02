@@ -58,16 +58,6 @@ public interface YATLListener extends ParseTreeListener {
 	 */
 	void exitEscapedChar(YATLParser.EscapedCharContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link YATLParser#escapedBraket}.
-	 * @param ctx the parse tree
-	 */
-	void enterEscapedBraket(YATLParser.EscapedBraketContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link YATLParser#escapedBraket}.
-	 * @param ctx the parse tree
-	 */
-	void exitEscapedBraket(YATLParser.EscapedBraketContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link YATLParser#controlExp}.
 	 * @param ctx the parse tree
 	 */

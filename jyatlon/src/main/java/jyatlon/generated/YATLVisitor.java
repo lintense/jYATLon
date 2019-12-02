@@ -41,12 +41,6 @@ public interface YATLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEscapedChar(YATLParser.EscapedCharContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link YATLParser#escapedBraket}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitEscapedBraket(YATLParser.EscapedBraketContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link YATLParser#controlExp}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

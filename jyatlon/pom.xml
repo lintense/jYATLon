@@ -119,6 +119,7 @@
 		  <excludes>
 		  	<exclude>**/dev/**</exclude>
 		  </excludes>
+		  <finalName>jYATLon-${version}</finalName>  
 		</configuration>
 	</plugin>
   </plugins>

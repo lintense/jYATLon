@@ -24,13 +24,13 @@ public class CompareString {
 		boolean result = true;
 		
 		while (iref < fv.length || is < sv.length) {
-			if (fv[iref] == dv[id] && sv[is] == dv[id]) { // Everything is equal
+			if (id < dv.length && fv[iref] == dv[id] && sv[is] == dv[id]) { // Everything is equal
 //				System.out.println(sl[is]);
 				iref++; is++; id++;
-			} else if (sv[is] != dv[id]){ // Missing line in s
+			} else if ((id < dv.length && sv[is] != dv[id]) || (id >= dv.length && is < sv.length)){ // Missing line in s
 				System.out.println("Extra String " + (is + 1) + ": " + sl[is++]);
 				result = false;
-			} else if (fv[iref] != dv[id]){ // Missing line in ref
+			} else if ((id < dv.length && fv[iref] != dv[id]) || (id >= dv.length && iref < fv.length)){ // Missing line in ref
 				System.out.println("Missing File " + (iref + 1) + ": " + fl[iref++]);
 				result = false;
 			} else

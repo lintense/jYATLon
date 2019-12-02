@@ -6,6 +6,7 @@
 // All names ending by "Exp" are considered to have a terminal Collection arg. (NOT needed anymore)
 // Always wrap Terminals so we can drop them
 // Using 'literal' in expression will provide better error messages (at least is seem so...)
+// https://stackoverflow.com/questions/22415208/get-rid-of-token-recognition-error
 
 grammar YATL;
 
@@ -14,7 +15,7 @@ template
 	;
 	
 section
-	: SPACE* EQUAL EQUAL EQUAL SPACE* pathExp SPACE* EQUAL EQUAL EQUAL SPACE* NEWLINE line*
+	: SPACE* SECTIONSEP SPACE* pathExp SPACE* SECTIONSEP SPACE* NEWLINE line*
 	| EQUAL ROOT EQUAL NEWLINE line*
 	;
 	
@@ -23,36 +24,36 @@ line
 	;
 	
 lineExp
-	: commentOp | escapedChar | value | controlExp | rawText | escapedBraket
+	: commentOp | escapedChar | value | controlExp | rawText //| escapedBraket
 	;
 
 escapedChar
 	: ESCAPE .
 	;
 	
-escapedBraket
-	: ( LEFTCB | '[' | POUND )
-	;
+//escapedBraket
+//	: SPACE* ( LEFTCB | '[' | POUND | EQUAL )
+//	;
 
 controlExp
-	: LEFTCB controlOp SPACE+ aliasName SPACE* RIGHTCB
+	: controlOp SPACE+ aliasName SPACE* RCURL
 	;
 
 controlOp
-	: BEGIN | BEFORE | BETWEEN | AFTER | END
+	: CONTROL
 	;
 
 commentOp
-	: POUND POUND POUND
+	: COMMENTSEP
 	;
 	
 rawText
-	: (~(EQUAL | NEWLINE | ESCAPE | LEFTCB | '[' | POUND))+
+	: SPACE+
+	| ~( SPACE | SECTIONSEP | NEWLINE | ESCAPE | CONTROL | COMMENTSEP | LVALUE )+
 	;
 
 value
-	: LEFTCB '[' SPACE* (ifExp SPACE+)? (callExp SPACE+)? valueExp SPACE* ']' RIGHTCB
-	| '[' SPACE* (ifExp SPACE+)? (callExp SPACE+)? valueExp SPACE* ']'
+	: LVALUE SPACE* (ifExp SPACE+)? (callExp SPACE+)? valueExp SPACE* RVALUE
 	;
 	
 ifExp
@@ -69,7 +70,7 @@ logicalExp
 	;
 
 logicalOp
-	: '||' | '&&'
+	: OR | AND
 	;
 
 binaryExp
@@ -78,11 +79,11 @@ binaryExp
 	;
 
 unaryOp
-	: '!' | '-'
+	: NOT | MINUS
 	;
 
 binaryOp
-	: '!' EQUAL | EQUAL EQUAL | '>' | '>' EQUAL | '<' | '<' EQUAL | '<>'
+	: NOT EQUAL | EQUAL EQUAL | '>' | '>' EQUAL | '<' | '<' EQUAL | '<>'
 	;
 
 valueExp
@@ -95,7 +96,7 @@ valueArg
 	;
 	
 operation 
-	: '.' SPACE? methodName (SPACE? '(' SPACE? argExp? SPACE? ')')? (SPACE? COLON SPACE? aliasName)?
+	: DOT SPACE? methodName (SPACE? '(' SPACE? argExp? SPACE? ')')? (SPACE? COLON SPACE? aliasName)?
 	;
 
 argExp
@@ -103,11 +104,11 @@ argExp
 	;
 
 pathExp
-	: anyPathOp? pathName (( '/' | '\\' ) pathName)*
+	: anyPathOp? pathName (PATHSEP pathName)*
 	;
 
 anyPathOp
-	: ANYPATH ( '\\' | '/' )
+	: ANYPATH PATHSEP
 	;
 
 pathName
@@ -122,7 +123,7 @@ aliasName
 	: NAME
 	;
 	
-//////////////////////////////////////////////////////////////////////////////
+////////////////////////////////// LEXER RULES ////////////////////////////////////////////
 
 //WS	
 //options {
@@ -144,23 +145,41 @@ AFTER			: 'after';
 END				: 'end';
 CALL			: 'call';
 IF				: 'if';
+CONTROL			:  LCURL ( BEGIN | BEFORE | BETWEEN | AFTER | END ) ;
 
 ROOT			: '$';
-POUND			: '#' ;
-LEFTCB			: '{' ;
-RIGHTCB			: '}' ;
+
+LCURL			: '{' ;
+LBRACK			: '[' ;
+LVALUE			: LCURL LCURL ;
+RCURL			: '}' ;
+RBRACK			: ']' ;
+RVALUE			: RCURL RCURL;
+PATHSEP			: ( '\\' | '/' ) ;
+
 ESCAPE			: '~' ;
-EQUAL			: '=' ;
+DOT				: '.' ;
 
 COMMA			: ',' ;
 COLON			: ':' ;
 NEWLINE			: '\n';
 
-WS	: [\r]+    -> skip ;
+NOT				: '!' ;
+MINUS			: '-' ;
 
-SPACE
-	: ( ' ' | '\t' )
-	;
+WS				: [\r]+    -> skip ;
+
+SPACE			: ( ' ' | '\t' ) ;
+
+
+EQUAL			: '=' ;
+SECTIONSEP		: EQUAL EQUAL EQUAL ;
+POUND			: '#' ;
+COMMENTSEP		: POUND POUND POUND ;
+PIPE			: '|' ;
+OR				: PIPE PIPE ;
+AMP				: '&' ;
+AND				: AMP AMP ;
 
 NAME 
     : ( ('a'..'z') | ('A'..'Z') | ('_') ) 

@@ -88,6 +88,18 @@ public class App { // Rename to YATL
     	YATLLexer lexer = new YATLLexer(input);
         lexer.setTokenFactory(new CommonTokenFactory(true));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
+        
+        
+        // Write all extracted Tokens
+        int i = tokens.LA(1);
+        while (i >= 0) {
+        	System.out.print(YATLLexer.ruleNames[i-1] + (i == YATLLexer.NEWLINE ? "\n" : " "));
+        	tokens.consume();
+        	i = tokens.LA(1);
+        }
+        tokens.reset();
+        
+        
         YATLParser parser = new YATLParser(tokens);
         ParseTree tree = parser.template(); // begin parsing at rule 'r'
 //        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
