@@ -3,3 +3,5 @@ jdk:
   - openjdk9
 script:
   - mvn -f jyatlon/pom.xml package
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
