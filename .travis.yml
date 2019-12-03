@@ -2,7 +2,4 @@ language: java
 jdk:
   - openjdk9
 script:
-  - pwd
-  - ls
-  - ls /home/travis/build/lintense/jYATLon/jYATLon/pom.xml
-  - mvn -f jyatlon/pom.xml package -X
+  - mvn -f jyatlon/pom.xml package
