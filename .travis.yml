@@ -5,4 +5,4 @@ script:
   - pwd
   - ls
   - ls /home/travis/build/lintense/jYATLon/jYATLon/pom.xml
-  - mvn -f jyatlon/pom.xml build -X
+  - mvn -f jyatlon/pom.xml package -X
