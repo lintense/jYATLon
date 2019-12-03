@@ -2,4 +2,4 @@ language: java
 jdk:
   - oraclejdk9
 script:
-  - mvn build
+  - mvn -f jYATLon/pom.xml build
