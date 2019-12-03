@@ -24,7 +24,7 @@ class AppTest {
 //	}
 	@Test
 	void testParsing1() throws IOException {
-		System.out.println("testParsing1()");
+		System.out.println("### testParsing1()");
 		String t = " === String ===\n\n\n" +
 				" a b### {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
 		
@@ -37,7 +37,7 @@ class AppTest {
 	}
 	@Test
 	void testSectionLines() throws IOException {
-		System.out.println("testSectionLines()");
+		System.out.println("### testSectionLines()");
 		String t = " === String === \n\n === Object ===";
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
@@ -48,7 +48,7 @@ class AppTest {
 	}
 	@Test
 	void testInitControls() throws IOException {
-		System.out.println("testInitControls()");
+		System.out.println("### testInitControls()");
 		String t = "{begin X}{before X}{between X}{after X}{end X}";
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);

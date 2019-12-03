@@ -5,6 +5,9 @@
   <version>0.0.1-SNAPSHOT</version>
   <name>jyatlon</name>
   <description>A declarative templating language</description>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
   <dependencies>
   	<dependency>
   		<groupId>org.antlr</groupId>

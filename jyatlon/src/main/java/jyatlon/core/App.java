@@ -97,7 +97,7 @@ public class App { // Rename to YATL
         	tokens.consume();
         	i = tokens.LA(1);
         }
-        tokens.reset();
+        tokens.seek(0);
         
         
         YATLParser parser = new YATLParser(tokens);
@@ -127,7 +127,7 @@ public class App { // Rename to YATL
 /*
     Have a nice mechanism for error message handling ERROR_P1_P2
     Use a writer when compiling instead of loggers.
-    Detect ~ cannot be used inside COMMANDS and VALUES (except {begin ‘...’})
+    Detect ~ cannot be used inside COMMANDS and VALUES (except {begin '...'})
     Detect any { before the enclosing }
     When parsing {, could check for valid COMMAND names to avoid using ~
     Have a trace to follow the order of calling to debug the command calls
