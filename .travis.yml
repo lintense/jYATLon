@@ -1,0 +1,6 @@
+.travis.yml
+language: java
+sudo: false
+dist: trusty
+jdk:
+  - oraclejdk8
