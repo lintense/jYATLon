@@ -3,7 +3,7 @@
 ## *But in case you are interested, here is a brief presentation*
 
 # j-YATL-on
-![](https://travis-ci.org/lintense/jYATLon.svg?branch=master)  
+![](https://travis-ci.org/lintense/jYATLon.svg?branch=master) [![codecov](https://codecov.io/gh/lintense/jYATLon/branch/master/graph/badge.svg)](https://codecov.io/gh/lintense/jYATLon)  
 ![Yet Another Template Language](https://github.com/lintense/jYATLon/blob/master/img/logo.png)
 ## *Yet Another Template Language...*
 
