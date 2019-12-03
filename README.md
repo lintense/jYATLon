@@ -36,7 +36,7 @@ yatl.merge(root, writer); // The same as Velocity!
 - It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL will not implement complex computations...
 
 #### <a id="value"></a>Value
-- A value is an expression enclosed in double braces `{{` ... `}}`.
+- A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](#https://mustache.github.io/)!
 - It can be a constant: `{{'any text'}}` or `{{"I'm a text!"}}`
 - The result of a value expression is always inserted where it is declared.
 - A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any public methods that is valid for this object and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
@@ -62,8 +62,8 @@ yatl.merge(root, writer); // The same as Velocity!
 - If any part of a [value](#value) expression is `null` or empty `""` then no text will be inserted. If you intend to provide a default text in those cases, then you **MUST** provide the [value](#value) with an alias and put it into a [block](#block). 
 
 #### <a id="block"></a>Block
-- A Block is delimited by controls and is always associated to a single [alias](#alias).
-- Its role is to control the visibilty of the text that surrounds the [value](#value) associated with its [alias](#alias).
+- A block is delimited by controls that are enclosed into **single braces** `{` `}`.
+- A block is always associated to a single [alias](#alias). Its role is to control the visibilty of the text that surrounds the [value](#value) associated with its [alias](#alias).
 - A block always begins by `{begin ALIAS}` and always ends by `{end ALIAS}`.
 ```javascript
 {begin ALIAS} // The most simple block!
@@ -160,7 +160,7 @@ x = null; // Text to appear if the Collection is empty
 
 #### <a id="command"></a>Call command
 - When using a call command, it is possible to specify where you want to insert the text.
-- Call and [values](#value) are pretty similar except that call commands are defined with single braces `{call PATH VALUE}` just like controls.
+- Call and [values](#value) are pretty similar except that call commands are defined with **single braces** `{call PATH VALUE}` just like controls.
 - You can use conditional to decide when to invoke a command `{if !$.test call PATH $.val}`.
 - It is not permitted to call the root context `{call $ $.val}` since this would trigger an infinite loop!
 ```javascript
