@@ -2,5 +2,7 @@ language: java
 jdk:
   - oraclejdk9
 script:
+  - pwd
+  - ls
   - ls /home/travis/build/lintense/jYATLon/jYATLon/pom.xml
-  - mvn -f jYATLon/pom.xml build -X
+  - mvn -f jyatlon/pom.xml build -X
