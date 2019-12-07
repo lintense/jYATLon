@@ -28,7 +28,7 @@ Writer writer = new StringWriter();
 yatl.merge(root, writer); // The same as Velocity!
 ```
 ### Tutorial
-- YATL is intended to be the simplest templating language possible. This is why it does this one thing, hopefully well!
+- YATL is intended to be the simplest templating language possible, period.
 - As a general rule, [values](#value), [commands](#command) and [comments](#comment) begin and end on the same line.
 - Also, be aware that spaces are not allowed inside [value expressions](#value), [commands](#command) and [paths](#path).
 
@@ -37,19 +37,25 @@ yatl.merge(root, writer); // The same as Velocity!
 - It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL will not implement complex computations...
 
 #### <a id="value"></a>Value
-- A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](#https://mustache.github.io/)!
+- A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](https://mustache.github.io/)!
 - It can be a constant: `{{'any text'}}` or `{{"I'm a text!"}}`
 - The result of a value expression is always inserted where it is declared.
 - A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any public methods that is valid for this object and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
 - You can invoke public accessors with `{{$.getSize()}}` or `{{$.getSize}}` or even `{{$.size}}` as you prefer.
 - You can use a Map key to access one of its value `{{Map.key}}`.
-- If you want to insert any conditional text arround a value, for example when it's be empty or when it returns a collection, then give it an [alias](#alias) and enclose it in a [block](#block).
+- If you want to insert any text depending on a value, for example when it is empty or when it is a collection, then assign an [alias](#alias) to this value and enclose it in a [block](#block).
 - A value expression **MUST NOT** contain spaces. Be sure you remember cause we will not tell you again!
+```javascript
+{{ $:Root.toString:Alias }} // This is a value 
+$:Root.toString:Alias       // This is the value expression (no spaces here!)
+Root, Alias                 // Well... those are the aliases!
+```
 
 ##### Conditional output
 - A value can be output conditionnaly by including a test `{{if $.test 'This is true!'}}`. 
 - To inverse the result of the test, use `!` as in `{{if !$.test 'Oops! Sorry...'}}`.
 - You can check if 2 values are equal `{{if $.v1 == $v2 $.v1:ALIAS}}` or not equal `{{if $.v1 != $v2 $.v2:ALIAS}}`.
+- In any case, equality is always performed by using the *Java* `==` operator.
 
 ##### Collection
 - In case the [value](#value) is a `Collection` it can be usefull to know about the *index of* one element or the *size of* the `Collection` itself.
@@ -60,7 +66,8 @@ yatl.merge(root, writer); // The same as Velocity!
 #### <a id="alias"></a>Alias
 - You may assign an alias to any part of the expression of a [value](#value). For exemple `{{$:ROOT.toString:ROOT_AGAIN.substring(1,4):PART_OF_ROOT}}`.
 - Aliases **MUST** start with a letter or an underscore but they can also contain numbers: `[_A-Za-z][_A-Za-z0-9]*`.
-- If any part of a [value](#value) expression is `null` or empty `""` then no text will be inserted. If you intend to provide a default text in those cases, then you **MUST** provide the [value](#value) with an alias and put it into a [block](#block). 
+- If any part of a [value](#value) expression is `null` or empty `""` then no text will be inserted. If you intend to provide a default text in those cases, then you **MUST** provide the [value](#value) with an alias and put it into a [block](#block).
+- Any alias outside of a [block](#block) has no effect.
 
 #### <a id="block"></a>Block
 - A block is delimited by controls that are enclosed into **single braces** `{` `}`.
@@ -130,9 +137,15 @@ x = null; // Text to appear if the Collection is empty
 
 #### <a id="path"></a>Path Block
 - Basically, a path block is a block that is defined outside of where it is actually inserted.
-- A path block always start with a header such as `=== CLASS ===` where *CLASS* is the *java class* of the context of that block.
+- A path block always start with a header such as `=== CLASS ===` where *CLASS* is the *java class* of the context passed to that block.
+- The *CLASS* can also be matched by the value of a `Map` *"class"* key. This allows the path blocks to be used by an imported *Java Map* originating from a *JSON* expression.
+```javascript
+// JSON expression emulating a Person object 
+// that can be loader into a Map object
+{class: "Person", name: "John"} 
+```
 - The calling context class path may be added to form a sequence `=== CALLER/CLASS ===` so it can be referenced in the path block. This path is absolute and can only be called from the [root](#root) context.
-- Use the any path syntax `=== .../CLASS ===` to allow the path block to be called from any context having a given class.
+- Use the *any path* syntax `=== .../CLASS ===` to allow the path block to be called from any context having a given class.
 - The path name **MUST NOT** contain spaces.
 
 ##### Calling 
@@ -250,3 +263,4 @@ T0 // This is the normal text for this document
 - Should it use loggers or writers to dump the errors?
 - Have a trace to follow the order of calling to debug the command calls
 - Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
+- Usage outside of Java
