@@ -52,10 +52,11 @@ Root, Alias                 // Well... those are the aliases!
 ```
 
 ##### Conditional output
-- A value can be output conditionnaly by including a test `{{if $.test 'This is true!'}}`. 
+- A value can be output conditionnaly by including a test `{{if $.test 'This is true!'}}`.
 - To inverse the result of the test, use `!` as in `{{if !$.test 'Oops! Sorry...'}}`.
 - You can check if 2 values are equal `{{if $.v1 == $v2 $.v1:ALIAS}}` or not equal `{{if $.v1 != $v2 $.v2:ALIAS}}`.
 - In any case, equality is always performed by using the *Java* `==` operator.
+- Any `null` object or empty `String` or `Collection` are considered *false* `{{if $ 'Root is not null!'}}`.
 
 ##### Collection
 - In case the [value](#value) is a `Collection` it can be usefull to know about the *index of* one element or the *size of* the `Collection` itself.
@@ -64,10 +65,11 @@ Root, Alias                 // Well... those are the aliases!
 - `Collection` functions may be used inside a condition: `{{if indexOf($.val) == 1 'First:'}}`.
 
 #### <a id="alias"></a>Alias
-- You may assign an alias to any part of the expression of a [value](#value). For exemple `{{$:ROOT.toString:ROOT_AGAIN.substring(1,4):PART_OF_ROOT}}`.
+- You may assign an alias to any part of a [value](#value) expression. For exemple `{{$:ROOT.toString:ROOT_AGAIN.substring(1,4):PART_OF_ROOT}}`.
 - Aliases **MUST** start with a letter or an underscore but they can also contain numbers: `[_A-Za-z][_A-Za-z0-9]*`.
 - If any part of a [value](#value) expression is `null` or empty `""` then no text will be inserted. If you intend to provide a default text in those cases, then you **MUST** provide the [value](#value) with an alias and put it into a [block](#block).
 - Any alias outside of a [block](#block) has no effect.
+- For clarity, it is possible to prepare an alias at the begining of any [block](#block) `{prepare $.valueExp:ALIAS}`. Prepared alias can be easily inserted later `{{ALIAS}}` in the block.
 
 #### <a id="block"></a>Block
 - A block is delimited by controls that are enclosed into **single braces** `{` `}`.
@@ -138,12 +140,6 @@ x = null; // Text to appear if the Collection is empty
 #### <a id="path"></a>Path Block
 - Basically, a path block is a block that is defined outside of where it is actually inserted.
 - A path block always start with a header such as `=== CLASS ===` where *CLASS* is the *java class* of the context passed to that block.
-- The *CLASS* can also be matched by the value of a `Map` *"class"* key. This allows the path blocks to be used by an imported *Java Map* originating from a *JSON* expression.
-```javascript
-// JSON expression emulating a Person object 
-// that can be loader into a Map object
-{class: "Person", name: "John"} 
-```
 - The calling context class path may be added to form a sequence `=== CALLER/CLASS ===` so it can be referenced in the path block. This path is absolute and can only be called from the [root](#root) context.
 - Use the *any path* syntax `=== .../CLASS ===` to allow the path block to be called from any context having a given class.
 - The path name **MUST NOT** contain spaces.
@@ -171,6 +167,17 @@ x = null; // Text to appear if the Collection is empty
 {{CallingClass.name}}.{{MyClass.name}} // Output both context names using their path/class names
 {{ANCESTOR.name}}.{{CURRENT.name}} // Output both context names using their path aliases
 ```
+
+##### JSON
+- It is possible to use *JSON* files as a [root](#root) object.
+- *JSON* files are loaded into `Map` objects. 
+- `Map` can have a *class* key that can be used as a path.
+```javascript
+// JSON expression emulating a Person object 
+// that will be loaded into a Map object
+{class: "Person", name: "John"} 
+```
+
 
 #### <a id="command"></a>Call command
 - When using a call command, it is possible to specify where you want to insert the text.
@@ -266,6 +273,4 @@ T0 // This is the normal text for this document
 - Usage outside of Java
 
 Please enjoy! S.Nadeau :-)
-
-
 
