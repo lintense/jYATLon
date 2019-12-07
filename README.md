@@ -4,18 +4,18 @@
 
 # j-YATL-on
 ![](https://travis-ci.org/lintense/jYATLon.svg?branch=master) [![codecov](https://codecov.io/gh/lintense/jYATLon/branch/master/graph/badge.svg)](https://codecov.io/gh/lintense/jYATLon)  
-![Yet Another Template Language](https://github.com/lintense/jYATLon/blob/master/img/logo.png)
+![Yet Another Template Language](https://raw.githubusercontent.com/lintense/jYATLon/master/img/logo.png)
 ## *Yet Another Template Language...*
 
 ### Why YATL?
-Most current template language are procedural, so they look like code, not like template... So they are (at times) hard to understand and need to be debugged, just like code!
-So what about a new *declarative* templating language build from the groud up to look just like a *real* template language?
+Most current template languages are procedural, so they look like code, not like template... So they are (at times) hard to understand and need to be debugged, just like code!
+What about a new *declarative* templating language build from the ground up to look just like a *real* template language?
 Doing so would provide the following benefits:
 
 - **Clarity:** No `${#if#elseif#endif}` gibberish.
 - **Java 8 compatibility:** To accomodate existing projects.
 - **Light & simple:** Easy to understand, easy to adapt!
-- **Performance**... whenever possible!
+- **Performance**... Whenever possible!
 - **No dependency**: Small footprint.
 
 ### <a id="running"></a>Running the program
@@ -37,7 +37,7 @@ yatl.merge(root, writer); // The same as Velocity!
 - It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL will not implement complex computations...
 
 #### <a id="value"></a>Value
-- A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](#https://mustache.github.io/)!
+- A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](https://mustache.github.io/)!
 - It can be a constant: `{{'any text'}}` or `{{"I'm a text!"}}`
 - The result of a value expression is always inserted where it is declared.
 - A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any public methods that is valid for this object and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
@@ -250,3 +250,5 @@ T0 // This is the normal text for this document
 - Should it use loggers or writers to dump the errors?
 - Have a trace to follow the order of calling to debug the command calls
 - Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
+
+Please enjoy! S.Nadeau :-)
