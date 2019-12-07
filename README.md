@@ -263,9 +263,9 @@ T0 // This is the normal text for this document
 - Should it use loggers or writers to dump the errors?
 - Have a trace to follow the order of calling to debug the command calls
 - Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
-<<<<<<< HEAD
+- Usage outside of Java
 
 Please enjoy! S.Nadeau :-)
-=======
-- Usage outside of Java
->>>>>>> 260d28efa01bd5428a8cfd393ce68d7ba2f7c280
+
+
+
