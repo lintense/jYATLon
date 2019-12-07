@@ -57,4 +57,14 @@ class AppTest {
 		TestUtils.saveToFile("testInitControls.last.txt", obtained);
 		assertTrue(CompareString.compareFileToString(TestUtils.getResource("testInitControls.txt"), obtained));
 	}
+	@Test
+	void testAliases() throws IOException {
+		System.out.println("### testAliases()");
+		String t = "abc{{$:Root.toString:Value.toString:String}}def\nghi{{$:Root.toString:Value.toString:String}}jkl";
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream ps = new PrintStream(baos);
+		ObjectTree.dumpObject(App.getTemplate(t), ps);
+		String obtained = baos.toString();
+		TestUtils.saveToFile("testAliases.last.txt", obtained);
+	}
 }
