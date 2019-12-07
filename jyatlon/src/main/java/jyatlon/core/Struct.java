@@ -269,6 +269,13 @@ public abstract class Struct {
 			this.argExp = argExp;
 			this.aliasName = null;
 		}
+		public Operation(int from, int to, String methodName, String aliasName)
+		{
+			super(from, to);
+			this.methodName = methodName;
+			this.argExp = null;
+			this.aliasName = aliasName;
+		}
 		public Operation(int from, int to, String methodName, ArgExp argExp, String aliasName){
 			super(from, to);
 			this.methodName = methodName;
@@ -348,13 +355,13 @@ public abstract class Struct {
 			this.valueArg = valueArg;
 			this.aliasName = null;
 			this.operation = null;
-		};
+		}
 		public ValueExp(int from, int to, String valueArg, List<Operation> operation){
 			super(from, to);
 			this.valueArg = valueArg;
 			this.aliasName = null;
 			this.operation = operation;
-		};
+		}
 		public ValueExp(int from, int to, String valueArg, String aliasName, List<Operation> operation) {
 			super(from, to);
 			this.valueArg = valueArg;
@@ -402,14 +409,14 @@ public abstract class Struct {
 //				w.append("]\n");
 //			}
 //		}
-	};
+	}
 
 	public static class ArgExp extends Struct {
 		final List<ValueExp> valueExp;
 		public ArgExp(int from, int to, List<ValueExp> valueExp){
 			super(from, to);
 			this.valueExp = valueExp;
-		};
+		}
 	}
 
 	private static class BinaryExp extends Struct {
@@ -419,7 +426,7 @@ public abstract class Struct {
 			super(from, to);
 			this.valueExp = valueExp;
 			this.binaryOp = binaryOp;
-		};
+		}
 	}
 
 	private static class LogicalExp extends Struct {
@@ -429,14 +436,14 @@ public abstract class Struct {
 			super(from, to);
 			this.binaryExp = binaryExp;
 			this.logicalOp = logicalOp;
-		};
+		}
 	}
 	private static class IfExp extends Struct {
 		final LogicalExp logicalExp;
 		public IfExp(int from, int to, LogicalExp logicalExp){
 			super(from, to);
 			this.logicalExp = logicalExp;
-		};
+		}
 	}
 
 	private static class PathExp extends Struct {
@@ -451,7 +458,7 @@ public abstract class Struct {
 			super(from, to);
 			this.isAbsolute = false;
 			this.pathName = pathName;
-		};
+		}
 		public boolean isCompatible(Path path) {
 			return path.compatibility(pathName, isAbsolute) > 0;
 		}
@@ -462,19 +469,25 @@ public abstract class Struct {
 		public CallExp(int from, int to, PathExp pathExp){
 			super(from, to);
 			this.pathExp = pathExp;
-		};
+		}
 	}
 
 	private static class Value extends Struct {
 		final IfExp ifExp;
 		final CallExp callExp;
 		final ValueExp valueExp;
+		public Value(int from, int to, ValueExp valueExp){
+			super(from, to);
+			this.ifExp = null;
+			this.callExp = null;
+			this.valueExp = valueExp;
+		}
 		public Value(int from, int to, IfExp ifExp, CallExp callExp, ValueExp valueExp){
 			super(from, to);
 			this.ifExp = ifExp;
 			this.callExp = callExp;
 			this.valueExp = valueExp;
-		};
+		}
 		public List<Path> getValues(Path rootPath) {
 			return valueExp.getValues(rootPath);
 		}
