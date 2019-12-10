@@ -20,6 +20,8 @@ public abstract class Struct {
 	private static final String ALIAS_PREFIX = "_/";
 	private static final String ROOT = YATLParser.VOCABULARY.getLiteralName(YATLParser.ROOT).replace("'", "");
 	
+	// BAD - TODO - Use lazy initialization for efficiency
+	// TODO - This will be removed since Struct will be obsolete after Block initialization
 	protected final Map<String,Object> properties = new HashMap<String,Object>();
 	protected final int from;
 	protected final int to;
@@ -113,28 +115,6 @@ public abstract class Struct {
 			values.forEach(v -> result.addAll(v.getValues(rootPath))); // FIXME this is probably wrong
 			result.forEach(r -> r.toString());
 		}
-//		public List<List<?>> getValues(Path path) throws Exception{ // runtime
-//			List<List<?>> results = new ArrayList<List<?>>();
-////			int index = 0;
-//			for (ValueCall c : calls) {
-////				if (results.isEmpty())
-////					results.add(c.getValues(null, root));
-////				else {
-//					List<List<?>> newResults = new ArrayList<List<?>>();
-//					for (List<?> previousResult : results) {
-//						List <?> currentValues = c.getValues(previousResult.get(index), root);
-//						for (Object o2 : currentValues) {
-//							List<Object> newResult = new ArrayList<Object>(previousResult);
-//							newResult.add(o2);
-//							newResults.add(newResult);
-//						}
-//					}
-//					results = newResults;
-//					index++;
-////				}
-//			}
-//			return results;
-//		}
 	}
 	
 	public static class Line extends Struct {

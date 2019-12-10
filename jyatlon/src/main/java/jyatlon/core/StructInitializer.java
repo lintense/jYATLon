@@ -11,17 +11,21 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import jyatlon.core.Block.ControlBlock;
 import jyatlon.core.Struct.ControlExp;
 import jyatlon.core.Struct.Line;
 import jyatlon.core.Struct.LineExp;
+import jyatlon.core.Struct.Operation;
 import jyatlon.core.Struct.Section;
 import jyatlon.core.Struct.Template;
+import jyatlon.core.Struct.ValueExp;
 import jyatlon.generated.YATLParser;
 
 /**
  * @author linte
  * SRP: This class will be called upon each Struct object creation.
  * It is responsible for initializing and validating each Struct type.
+ * The idea is to not put any logic inside the Struct object so it can be regenerated.
  */
 public class StructInitializer {
 	
@@ -69,7 +73,7 @@ public class StructInitializer {
 				ControlExp ce = ((LineExp)e).controlExp;
 				if (ce != null) {
 					ControlExp[] array = controls.getOrDefault(ce.aliasName, new ControlExp[5]);
-					int i = "begin    |before   |between  |after    |end".indexOf(ce.controlOp)/10;
+					int i = ControlBlock.extractControlId(ce.controlOp);
 					// TODO Validate order
 					// TODO Validate not already filled
 					array[i] = ce;
@@ -116,5 +120,13 @@ public class StructInitializer {
 					.collect(Collectors.toList());
 		s.setProperty("Expressions", exps); // Flip value on exp.comment  
 	}
-	
+	void init(ValueExp v) {
+		//String valueArg, String aliasName, List<Operation> operation
+		// Cannot compute the value here nor can we prepare the method chain...
+		// This must all be done in the merge phase
+		
+		
+		
+
+	}
 }
