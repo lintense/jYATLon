@@ -30,18 +30,20 @@ import jyatlon.generated.YATLBaseListener;
  * Always wrap Terminals so we can drop them
  * Use literals instead of ALIASES gives better error messages on parsing errors
  * TODO - Could be improved to return all the possible constructor which would avoid runtime errors
+ * 
+ * Constraint #1 - Every subclasses of class T has only ONE constructor!
+ * 
+ * 
  */
 public class StructBuilder<T> extends YATLBaseListener {
-	public StructBuilder(Class<T> strucType, StructInitializer initializer) {
-		super();
-		this.strucType = strucType;
-		this.initializer = initializer;
-	}
-	private static final char INNER_CLASS_SEPARATOR = '$';
+	
 	private final Class<T> strucType;
 	private final Stack<Base> args = new Stack<Base>();
-	private final StructInitializer initializer;
-
+	private static final int ABSTRACT_STRUCT_PARM_SIZE = 2; 
+	public StructBuilder(Class<T> strucType) {
+		super();
+		this.strucType = strucType;
+	}
 	public T getStruct() {
 		return args.peek() != null && strucType.isAssignableFrom(args.peek().getValue().getClass()) 
 				? strucType.cast(args.peek().getValue()) 
@@ -58,115 +60,72 @@ public class StructBuilder<T> extends YATLBaseListener {
 				: null;
 	}
 	@Override public void exitEveryRule(ParserRuleContext ctx) {
+		
 		List<Rule> children = new ArrayList<Rule>();
 		for (int i = 0; i < ctx.getChildCount(); i++) {
 			Base parm = args.pop();
 			if (!parm.isTerminal()) // Drop terminal cause they are wrapped inside a rule
 				children.add((Rule)parm);
 		}
+		
 		Collections.reverse(children); // Keep original ordering
-		
-		Rule current = new Rule(ctx, children);
-		
-		boolean parentesis = children.size() == 1 && children.get(0).getType().equals(current.getType());
+		Rule currentRule = new Rule(ctx, children);
+		boolean parentesis = children.size() == 1 && currentRule.isSameStruct(children.get(0));
 		if (parentesis) // Type that contains itself is surrounded by parenthesis so we remove it
-			current = children.get(0);
-		else if (!current.isString()) { // Do not create a Struct for terminal types
-			
-			// Prepare the constructor parameters list
-			StringBuffer buf = new StringBuffer();
-			buf.append("int,int");
-			StringBuffer fullDesc = new StringBuffer();
-			fullDesc.append("int from, int to");
-			
-			Set<String> collArgs = current.getCollectionParms();
-			List<Object> constructorParms = new ArrayList<Object>();
-			constructorParms.add(current.ctx.start.getStartIndex());
-			constructorParms.add(current.ctx.stop.getStopIndex());
-			
-			Map<String,ArrayList<Object>> tempMap = new HashMap<String,ArrayList<Object>>();
-			children.forEach(a -> {
-				String argName = a.getArgName();
-				if (collArgs.contains(argName)) {
-					if (tempMap.containsKey(argName))
-						tempMap.get(argName).add(a.getValue());
-					else {
-						ArrayList<Object> coll = new ArrayList<Object>();
-						constructorParms.add(coll);
-						coll.add(a.getValue());
-						tempMap.put(argName, coll);
-						buf.append(",List");
-						fullDesc.append(", List<" + a.getType() + "> " + argName);
-					}
-				} else {
-					buf.append("," + a.getType());
-					fullDesc.append(", " + a.getType() + " " + argName);
-					constructorParms.add(a.getValue()); // a should have been replaced
-				}
-					
-			});
-			String parmTypes = buf.toString(); //constructorParms.stream().map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","));
-			String fullParmTypes = fullDesc.toString();
-			Class<T> currentClass = null;
-				// Select the correct constructor
-				Constructor<T> matchingConstructor = null;
-				currentClass = getSubclassForName(current.extractStructName());
-				if (currentClass == null) {
-//					current.showConstructor();
-					throw new IllegalStateException("Missing constructor and class for: " + strucType.getName() + INNER_CLASS_SEPARATOR + current.extractStructName() + "(" + fullParmTypes + ")");
-				}
-//				currentClass = Class.forName(strucType.getName() + INNER_CLASS_SEPARATOR + current.extractStructName());
-				Constructor<T>[] consArr = (Constructor<T>[]) currentClass.getConstructors();
-				for (int i = 0; i < consArr.length && matchingConstructor == null; i++) {
-					String consParmTypes = Arrays.stream(consArr[i].getParameterTypes()).map(item -> item.getSimpleName()).collect(Collectors.joining(","));
-//					System.out.println("Constructor types; " + current.getType() + "(" + consParmTypes + ")");
-					if (parmTypes.equals(consParmTypes))
-						matchingConstructor = consArr[i];
-				}
-				if (matchingConstructor != null) {
-					try {
-						Object test = null;
-						if (constructorParms.isEmpty())
-							test = matchingConstructor.newInstance();
-						else
-							test = matchingConstructor.newInstance(constructorParms.toArray());
-						current = new Struct((jyatlon.core.Struct)test);
-						current.init(initializer);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				} else
-					throw new IllegalStateException("Missing constructor: " + strucType.getName() + INNER_CLASS_SEPARATOR + current.extractStructName() + "(" + fullParmTypes + ")");
+			currentRule = children.get(0);
+		else if (!currentRule.isTerminal()) { // Do not create a Struct for terminal types
+			try {
+				// Create new object
+				Class<T> currentClass = getSubclassForName(currentRule.extractStructName());
+				if (currentClass != null) {
+					currentRule = currentRule.toStruct(currentClass);
+//					List<Object> constructorParms = currentRule.getContructorParms(currentClass, children);
+//					Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0];
+//					Object test = currentConstructor.newInstance(constructorParms.toArray());
+//					currentRule = new Struct((jyatlon.core.Struct)test, currentRule.getArgName());
+				} //else
+					//currentRule = new Struct(currentRule.getValue());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		args.push(current);
+		args.push(currentRule);
+	}
+	@Override 
+	public void visitTerminal(TerminalNode node) { 
+		// Not needed, all useful is wrapped so terminals can be dropped
+		// Still we must push something here to match the child count!
+		args.push(new Node(node)); 
 	}
 
-	@Override public void visitTerminal(TerminalNode node) { // Not needed, all useful is wrapped so terminals can be dropped
-		args.push(new Node(node)); // Still we must push something here to match the child count!
-	}
-
+	/**
+	 * @author linte
+	 * SRP - A small helper hierarchy to hold the already parsed nodes.
+	 * @param <T>
+	 */
 	private static abstract class Base {
-		abstract String getType();
+//		abstract String getType();
+		boolean isSameStruct(Base b) {
+			return false;
+		}
 		boolean isTerminal() {
 			return false;
 		}
 		abstract Object getValue();
-		void init(StructInitializer initializer){
-			throw new IllegalStateException("To be implemented by subclass");
-		}
 	}
-	private static class Struct extends Rule {
-		private final jyatlon.core.Struct struct;
-		public Struct(jyatlon.core.Struct struct) {
+	private static class Struct<T> extends Rule {
+		private final T struct;
+		public Struct(T struct) {
 			super(null, null);
 			this.struct = struct;
 			if (struct == null)
 				throw new IllegalArgumentException();
 		}
-		@Override
-		String getType() {
-			return extractStructName();
-		}
+//		@Override
+//		String getType() {
+//			return extractStructName();
+//		}
 		@Override
 		Object getValue() {
 			return struct;
@@ -174,65 +133,113 @@ public class StructBuilder<T> extends YATLBaseListener {
 		String extractStructName() {
 			return struct.getClass().getSimpleName();
 		}
-		void init(StructInitializer initializer){
-			struct.init(initializer);
-		}
 	}
 	private static class Rule extends Base {
 		private final ParserRuleContext ctx;
 		private final List<Rule> children;
 		public Rule(ParserRuleContext ctx, List<Rule> children) {
-			super();
 			this.ctx = ctx;
 			this.children = children;
 		}
 		Set<String> getCollectionParms() {
 			return Arrays.stream(ctx.getClass().getDeclaredMethods())
 				.filter(m -> m.getParameterTypes().length == 1)
-				.filter(m -> m.getParameterTypes()[0].getName().equals("int"))
+				.filter(m -> ParserRuleContext.class.isAssignableFrom(m.getReturnType()))
 				.map(m -> m.getName())
 				.collect(Collectors.toSet());
 		}
-		static String getRuleType(String pseudoType) {
-			return pseudoType.endsWith("Arg") || pseudoType.endsWith("Name") || pseudoType.endsWith("Op") ? "String" : pseudoType;
-		}
-		@Override
-		String getType() {
-			return getRuleType(extractStructName());
-		}
-		boolean isString() {
-			return getRuleType(extractStructName()).equals("String");
-		}
-//		String getKey() {
-//			String count = "00000" + children.size();
-//			return extractStructName() + count.substring(count.length() - 4);
+//		static String getRuleType(String pseudoType) {
+//			return pseudoType.endsWith("Arg") || pseudoType.endsWith("Name") || pseudoType.endsWith("Op") ? "String" : pseudoType;
 //		}
-		String getArgName() {
-			return lowerFirst(extractStructName());
+//		@Override
+//		String getType() {
+//			return getRuleType(extractStructName());
+//		}
+		
+		boolean isSameStruct(Rule r) {
+			return extractStructName().equals(r.extractStructName());
+//					r != null && r.ctx != null && ctx != null && r.ctx.getClass() == ctx.getClass();
+//			return b instanceof Rule && ((Rule)b);
 		}
-		static String lowerFirst(String arg) {
-			return Character.toLowerCase(arg.charAt(0)) + arg.substring(1);
+		String getArgName() {
+			return Utils.toLowerFirst(extractStructName());
 		}
 		String extractStructName() {
 			String result = ctx.getClass().getSimpleName();
 			int p = result.lastIndexOf("Context");
 			return result.substring(0, p > 0 ? p : result.length());
 		}
-		void showConstructor() {
-			System.out.println("private static class " + extractStructName() + " extends Struct {");
-			children.forEach(base -> {System.out.println("	private final " + base.getType() + " " + base.getArgName() + ";");});
-			System.out.print("	public " + extractStructName() + "(");
-			CommaObj c = new CommaObj();
-			children.forEach(base -> {System.out.print(c.getComma() + base.getType() + " " + base.getArgName());});
-			System.out.println("){");
-			children.forEach(base -> {System.out.println("		this." + base.getArgName() + " = " + base.getArgName() + ";");});
-			System.out.println("	};\n};\n");
-		}
 		@Override
 		Object getValue() {
 			if (children.isEmpty())
 				return ctx.getText();
 			throw new IllegalStateException();
+		}
+		<T> Struct<T> toStruct(Class<T> currentClass) throws Exception {
+//			Class<T> currentClass = builder.getSubclassForName(extractStructName());
+			Object[] constructorParms = getContructorParms(currentClass, children);
+			assert currentClass.getConstructors().length == 1; // Constraint #1
+			Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0]; 
+			T test = currentConstructor.newInstance(constructorParms);
+			return new Struct<T>(test);
+		}
+		
+		/**
+		 * @param currentRule
+		 * @param currentClass
+		 * @param children
+		 * @return The arguments to pass to the constructor in order to generate a structure for this Rule.
+		 */
+		 Object[] getContructorParms(Class currentClass, List<Rule> children){
+			// Get the only constructor first
+			List<String> constructorsFields = Arrays.stream(currentClass.getDeclaredFields())
+					.map(f -> f.getName())
+					.collect(Collectors.toList());
+//			List<Field> constructorsFields = new ArrayList(Arrays.asList(currentClass.getDeclaredFields()));
+
+			Object[] constructorParms = new Object[constructorsFields.size() + ABSTRACT_STRUCT_PARM_SIZE];
+			
+			// Prepare the constructor parameters list
+//			List<Object> constructorParms = new ArrayList<Object>();
+//			constructorParms.add(ctx.start.getStartIndex());
+//			constructorParms.add(ctx.stop.getStopIndex());
+			constructorParms[0] = ctx.start.getStartIndex();
+			constructorParms[1] = ctx.stop.getStopIndex();
+			
+			
+			
+			// Use a Map to gather values
+			Set<String> collArgs = getCollectionParms();
+			Map<String,ArrayList<Object>> tempMap = new HashMap<String,ArrayList<Object>>();
+			children.forEach(a -> {
+				String argName = a.getArgName();
+//				try {
+//					// If an argument is not present then fill it with null
+//					while (!tempMap.containsKey(argName) && !argName.equals(constructorsFields.remove(0).getName()))
+//						constructorParms.add(null);
+//				} catch (Exception e) {
+//					System.out.println(currentClass.getDeclaredFields());
+					
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+				if (collArgs.contains(argName)) {
+					if (tempMap.containsKey(argName))
+						tempMap.get(argName).add(a.getValue());
+					else {
+						ArrayList<Object> coll = new ArrayList<Object>();
+						constructorParms[constructorsFields.indexOf(argName) + ABSTRACT_STRUCT_PARM_SIZE] = coll;
+						coll.add(a.getValue());
+						tempMap.put(argName, coll);
+					}
+				} else
+					constructorParms[constructorsFields.indexOf(argName) + ABSTRACT_STRUCT_PARM_SIZE] = a.getValue();
+			});
+//			while (!constructorsFields.isEmpty()) {
+//				constructorsFields.remove(0);
+//				constructorParms.add(null);
+//			}
+			return constructorParms;
 		}
 	}
 	private static class Node extends Base {
@@ -241,10 +248,10 @@ public class StructBuilder<T> extends YATLBaseListener {
 			super();
 			this.node = node;
 		}
-		@Override
-		String getType() {
-			return "String";
-		}
+//		@Override
+//		String getType() {
+//			return "String";
+//		}
 		@Override
 		boolean isTerminal() {
 			return true;
@@ -252,12 +259,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 		@Override
 		Object getValue() {
 			return node.getText();
-		}
-	}
-	private static class CommaObj {
-		private int first = 0;
-		String getComma() {
-			return first++ == 0 ? "" : ", ";
 		}
 	}
 }

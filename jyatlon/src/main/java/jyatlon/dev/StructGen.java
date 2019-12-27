@@ -2,91 +2,138 @@ package jyatlon.dev;
 
 // TODO - Wait for the Templater to work to self template its Struct Class
 
-import java.io.StringWriter;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.stream.Collectors;
 
+import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.TerminalNode;
-
-import jyatlon.core.Struct.Section;
-import jyatlon.generated.YATLBaseListener;
 
 /**
  * @author linte
- * SRP: This class will generate the Struct class by using the YATL.
+ * SRP: This class will generate the Struct class by using Reflection on YATLParser.
  * UNKNOWN: Will it be possible to know in advance all the required constructor.
  * Otherwise, will need to change the StructBuilder to fill in with nulls.
  */
-public class StructGen<T> {
+public class StructGen {
 	
-	private final Class<T> parserType;
-	private static final char INNER_CLASS_SEPARATOR = '$';
+//	private static final char INNER_CLASS_SEPARATOR = '$';
 	
-	public StructGen(Class<T> parserType) {
-		super();
-		this.parserType = parserType;
-	}
-
-	public void extractStruct(StringBuilder w) {
-		
-		Class<?>[] parserClasses = parserType.getClasses();
-		Arrays.stream(parserClasses).forEach(c -> {
+    public static void main(String[] parms) {
+    	
+    	String parserClassName = "jyatlon.generated.YATLParser";
+    	StringBuilder sb = new StringBuilder();
+   
+    	try {
+			Class<?> c = Class.forName(parserClassName);
+			Class<Parser> cl = Parser.class.isAssignableFrom(c) ? (Class<Parser>)c : null;
 			
-			w.append("public static class " + getStructName(c) + " extends Struct {\n");
+			if (cl == null)
+				System.out.println(parserClassName + " is not a subclass of " + Parser.class.getName());
+			else
+				extractStruct(sb, cl);
+
+		} catch (ClassNotFoundException e) {
+			System.out.println(parserClassName + " not found");
+		}
+		
+    	System.out.println(sb.toString());
+    }
+	public static void extractStruct(StringBuilder w, Class<Parser> parserType) {
+		
+		w.append("import java.util.List;\n\n");
+		w.append("public class Struct {\n");
+		w.append("	protected final int from;\n");
+		w.append("	protected final int to;\n\n");
+		
+		
+		w.append("	public Struct(int from, int to) {\n");
+		w.append("		super();\n");
+		w.append("		this.from = from;\n");
+		w.append("		this.to = to;\n");
+		w.append("	}\n");
+		
+		// For each subclass
+		Class<?>[] parserClasses = parserType.getClasses();
+		Arrays.stream(parserClasses).filter(x -> hasGrammarMethod(x)).forEach(c -> {
+			
+			w.append("	public static class " + getStructName(c) + " extends Struct {\n");
 			
 			// Fields
-			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
-				w.append("	private final " + getStructName(m.getReturnType()) + " " + lowerFirst(getStructName(m.getReturnType())) + ";\n");
+			Arrays.stream(c.getDeclaredMethods()).filter(m2 -> !m2.getReturnType().getName().equals(c.getName())).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+				w.append("		final " + toFieldString(m) + ";\n");
 			});
 			
 			// Constructor
-			w.append("	public " + getStructName(c) + "(");
+			// Generate only one constructor per Struct subclasses.
+			// This is because there is no way (that I am aware of) to collect which args are optional(?,*) vs mandatory(+)
+			// StructBuilder will need to find the constructor but this would be easy since there is only one!
+			w.append("		public " + getStructName(c) + "(int from, int to, ");
 			CommaObj com = new CommaObj();
-			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
-				w.append(com.getComma() + getStructName(m.getReturnType()) + " " + lowerFirst(getStructName(m.getReturnType())));
+			Arrays.stream(c.getDeclaredMethods()).filter(m2 -> !m2.getReturnType().getName().equals(c.getName())).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+				w.append(com.getComma() + toFieldString(m));
 			});
 			w.append("){\n");
+			w.append("			super(from, to);\n");
+			
+			Arrays.stream(c.getDeclaredMethods()).filter(m2 -> !m2.getReturnType().getName().equals(c.getName())).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+				w.append("			this." + lowerFirst(getStructName(m.getReturnType())) + " = " + lowerFirst(getStructName(m.getReturnType())) + ";\n");
+			});
+			w.append("		}\n");
 
-//				private final List<Section> section;
-//				public Template(int from, int to, List<Section> section){
-//					super(from, to);
-//					this.section = section;
-//				}
-//				public void test(Object root) {
-//					Path rootPath = new Path(root.getClass().getSimpleName(), ROOT, root);
-//					String obj = rootPath.toString();
-//					section.forEach(s -> s.call(rootPath.add("String", getDefaultAlias(null), obj))); // TODO - String:Alias1, ...
-//				}
-
-			
-			
-			
-			
+			w.append("	}\n");
 		});
+		w.append("}\n");
+	}
+	private static String toFieldString(Method m) {
+		String structType = isTerminalClass(m.getReturnType()) ? "String" : getStructName(m.getReturnType());
+		String structName = m.getName();
+		return (isListMethod(m) ? "List<" + structType + ">" : structType) + " " + structName;
+	}
+	
+	
+//	private static Class<Parser> getParserForName(String subclassName){
+//		Class<?> subclass = Arrays.asList(Parser.class.getDeclaredClasses())
+//				.stream()
+//				.filter(a -> Parser.class.isAssignableFrom(a))
+//				.filter(b -> b.getSimpleName().equals(subclassName))
+//				.findAny().orElse(null);
+//		return subclass != null && Parser.class.isAssignableFrom(subclass)
+//				? Parser.class.getClass().cast(subclass) 
+//				: null;
+//	}
+	private static boolean isTerminalClass(Class<?> parserClass) {
+		return !hasGrammarMethod(parserClass);
 	}
 	private static String lowerFirst(String arg) {
 		return Character.toLowerCase(arg.charAt(0)) + arg.substring(1);
 	}
-	private boolean isGrammarMethod(Method m) {
-		Class<?> c = m.getReturnType();
-		return m.getParameterCount() == 0 && (
-				c.getName().equals(String.class.getName())
-				|| ParserRuleContext.class.isAssignableFrom(c)
-				|| Collections.class.isAssignableFrom(c));
+	private static boolean hasGrammarMethod(Class<?> parserClass) {
+		return Arrays.stream(parserClass.getDeclaredMethods()).anyMatch(m -> isGrammarMethod(m));
 	}
-	private String getStructName(Class<?> c) {
+	private static boolean isGrammarMethod(Method m) {
+		return ParserRuleContext.class.isAssignableFrom(m.getReturnType());
+	}
+	private static boolean isListMethod(Method m) {
+		return m.getParameterCount() == 1;
+	}
+//	private static boolean isGrammarMethod(Method m) {
+//		Class<?> c = m.getReturnType();
+//		return m.getParameterCount() == 0 && (
+//				c.getName().equals(String.class.getName())
+//				|| ParserRuleContext.class.isAssignableFrom(c)
+//				|| Collection.class.isAssignableFrom(c));
+//	}
+	
+	
+//	private static boolean isContextListMethod(Method m) {
+//		Class<?> c = m.getReturnType();
+//		return m.getParameterCount() == 0 && (
+//				c.getName().equals(String.class.getName())
+//				|| ParserRuleContext.class.isAssignableFrom(c)
+//				|| Collection.class.isAssignableFrom(c));
+//	}
+	private static String getStructName(Class<?> c) {
 		String className = c.getSimpleName();
-//		int p1 = className.indexOf('$');
 		int p2 = className.lastIndexOf("Context");
 		return p2 < 0 ? className : className.substring(0, p2);
 	}

@@ -73,14 +73,14 @@ public class App { // Rename to YATL
         ParseTree tree = parser.template(); // begin parsing at rule 'r'
 //        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         
-        StructInitializer initializer = new StructInitializer();
-        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class, initializer); //MyListener(); //
+//        StructInitializer initializer = new StructInitializer();
+        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class); //, initializer); //MyListener(); //
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(myListener, tree);
         Struct struct = myListener.getStruct(); // java.util.EmptyStackException
         
         Template t = (Template)struct;
-        t.test(t);
+//        t.test(t);
 	}
     public static Template getTemplate(String template) {
     	String actualTemplate = "=$=\n" + template + "\n";
@@ -104,8 +104,8 @@ public class App { // Rename to YATL
         ParseTree tree = parser.template(); // begin parsing at rule 'r'
 //        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         
-        StructInitializer initializer = new StructInitializer();
-        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class, initializer); //MyListener(); //
+//        StructInitializer initializer = new StructInitializer();
+        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class); //, initializer); //MyListener(); //
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(myListener, tree);
         Struct struct = myListener.getStruct(); // java.util.EmptyStackException
@@ -117,12 +117,7 @@ public class App { // Rename to YATL
     	// Always add '\n' \ at the end
     	
     }
-    public static void generateStruct() {
-    	StructGen<YATLParser> gen = new StructGen<YATLParser>(YATLParser.class);
-    	StringBuilder sb = new StringBuilder();
-    	gen.extractStruct(sb);
-    	System.out.println(sb.toString());
-    }
+
 }
 /*
     Have a nice mechanism for error message handling ERROR_P1_P2
