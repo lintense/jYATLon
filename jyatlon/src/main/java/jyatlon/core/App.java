@@ -6,16 +6,13 @@ package jyatlon.core;
 //https://tomassetti.me/antlr-mega-tutorial/ 
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import jyatlon.core.Struct.Template;
-import jyatlon.dev.StructGen;
 import jyatlon.generated.YATLLexer;
-import jyatlon.generated.YATLListener;
 import jyatlon.generated.YATLParser;
 
 public class App { // Rename to YATL
@@ -82,7 +79,15 @@ public class App { // Rename to YATL
         Template t = (Template)struct;
 //        t.test(t);
 	}
-    public static Template getTemplate(String template) {
+//    public static Template getTemplate(String template) {
+//    	
+//    	return getBlock(getStruct(template));
+//    }
+    static Block.PathBlock getBlock(Template t) {
+    	return BlockBuilder.extractBlock(t);
+    }
+    	
+    static Template getTemplate(String template) {
     	String actualTemplate = "=$=\n" + template + "\n";
     	UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream(actualTemplate.getBytes()));
     	YATLLexer lexer = new YATLLexer(input);

@@ -3,7 +3,7 @@
 ## *But in case you are interested, here is a brief presentation*
 
 # j-YATL-on
-![](https://travis-ci.org/lintense/jYATLon.svg?branch=master) [![codecov](https://codecov.io/gh/lintense/jYATLon/branch/master/graph/badge.svg)](https://codecov.io/gh/lintense/jYATLon) [![liberapay](http://img.shields.io/liberapay/patrons/lintense.svg?logo=liberapay)](https://liberapay.com/lintense/donate)
+[![travis-ci](https://travis-ci.org/lintense/jYATLon.svg?branch=master)](https://travis-ci.org/lintense/jYATLon) [![codecov](https://codecov.io/gh/lintense/jYATLon/branch/master/graph/badge.svg)](https://codecov.io/gh/lintense/jYATLon) [![liberapay](http://img.shields.io/liberapay/patrons/lintense.svg?logo=liberapay)](https://liberapay.com/lintense/donate)
 
 ![Yet Another Template Language](https://raw.githubusercontent.com/lintense/jYATLon/master/img/logo.png)
 ## *Yet Another Template Language...*

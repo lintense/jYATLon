@@ -1,5 +1,6 @@
 package jyatlon.core;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
@@ -16,7 +17,8 @@ import jyatlon.generated.YATLParser;
  */
 public class Path {
 
-	private final static String ANYPATH = YATLParser.VOCABULARY.getLiteralName(YATLParser.ANYPATH).replace("'", "");
+	private static final String SEPARATOR = File.separator;
+	private static final String ANYPATH = YATLParser.VOCABULARY.getLiteralName(YATLParser.ANYPATH).replace("'", "");
 	
 	// This is a naive implementation
 	private final String[] aliases;
@@ -76,6 +78,10 @@ public class Path {
 		
 		throw new IllegalArgumentException("The name '" + valueArg + "' does not exist in the current scope.");
 	}
+	public String getPathName() {
+		return String.join(Path.SEPARATOR, classes);
+	}
+	
 	public static class CallPath extends Path {
 
 		public CallPath(String pathName, String pathAlias, Object obj) {

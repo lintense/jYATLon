@@ -40,6 +40,9 @@ public class TestUtils {
 	}
 	public static File getResource(String filename) {
 		ClassLoader classLoader = TestUtils.class.getClassLoader();
+		File f = new File(classLoader.getResource(filename).getFile());
+		if (!f.canRead())
+			System.out.println("Cannot read file: " + f.getAbsolutePath());
 		return new File(classLoader.getResource(filename).getFile());
 	}
 }
