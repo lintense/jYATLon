@@ -191,9 +191,10 @@ public class BlockBuilder {
 	
 	private static final String AVAILABLE_CONTROLS = "        |begin    |before   |between  |after    |end      |empty    |prepare  |call     ";
 //	private static final int CONTROL_MAX = AVAILABLE_CONTROLS.length()/10;
+	private static final int CONTROLS_WORD_LENGTH = AVAILABLE_CONTROLS.indexOf('|') + 1;
 	private static final int CONTROL_END = extractControlId("end");
 	private static int extractControlId(String controlName) {
-		return AVAILABLE_CONTROLS.indexOf(controlName)/10;
+		return AVAILABLE_CONTROLS.indexOf(controlName)/CONTROLS_WORD_LENGTH;
 	}
 	ControlOperator parseControlExp(ControlExp ce) {
 //		ControlExp ce = lineExp.controlExp;

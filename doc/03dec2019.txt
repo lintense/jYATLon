@@ -1,0 +1,39 @@
+
+
+
+// Need to compute in advance everything that can be done statically
+Block
+- Scan each exp and gather them in doers
+	- Simple print
+	- Value (resolve alias and methods statically)
+		- Use Path?
+	- Embedded Block
+	- Embedded calls (must be resolved statically)
+		- resolve & validate paths
+		- When processing the calls, the text is attached to an anchor.
+
+// Need to produce a new document as fast as possible
+Block
+	- Compute all local values (local for this block)
+	- Resolve each local Aliases (Paths)
+	- Scan each doers and inject values (Paths)
+	- Iterate each embedded blocks and inject values (Paths)
+	
+Anchors
+	- An anchor is a pointer to the current writing position.
+	- It is given a name and stored in a map.
+	- Each anchor has a before and an after list.
+Writing the final text
+	(When processing the anchors, it is necessary to start from the last otherwise we would need to adjust the preceding achors pointers...)
+	- we start by ordering the anchor (starting from the end)
+	- We output the text til the first anchor
+	- We iterate the after list from the end
+	- Then iterate the before list from the start
+	- Then continue to output the text til the next anchor
+	
+### An other way is to create a new stream by inserting the previous stream text and the anchor text in order!
+
+To test:
+- Matching multiple alias in multiple places.
+- Associating multiple alias to the same value.
+

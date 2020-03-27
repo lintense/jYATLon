@@ -6,6 +6,7 @@ package jyatlon.core;
 //https://tomassetti.me/antlr-mega-tutorial/ 
 
 import java.io.ByteArrayInputStream;
+import java.io.StringWriter;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -83,8 +84,19 @@ public class App { // Rename to YATL
 //    	
 //    	return getBlock(getStruct(template));
 //    }
-    static Block.PathBlock getBlock(Template t) {
-    	return BlockBuilder.extractBlock(t);
+    static String process(String templateText, Object root) {
+    	Template t = getTemplate(templateText);
+    	BlockBuilder bb = new BlockBuilder(templateText);
+    	Block.PathBlock pb = bb.parseTemplate(t);
+    	StringWriter sw = new StringWriter();
+    	BlockProcessor.merge(pb, sw, root);
+    	return sw.toString();
+    }
+    
+    
+    static Block.PathBlock getBlock(String templateText, Template t) {
+    	BlockBuilder bb = new BlockBuilder(templateText);
+    	return bb.parseTemplate(t);
     }
     	
     static Template getTemplate(String template) {

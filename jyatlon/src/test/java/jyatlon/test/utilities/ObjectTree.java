@@ -1,24 +1,33 @@
 package jyatlon.test.utilities;
 
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class ObjectTree {
 	private static final String INDENTATION = "    ";
 	
-	
 	public static void dumpObject(Object o, PrintStream out) {
 		dumpObject(o, new HashMap<Object,Integer>(), "", out);
+	}
+	private static Comparator<Field> getFieldComparator(){
+		return new Comparator<Field>() {
+			public int compare(Field a, Field b) 
+		    { 
+		        return a.getName().compareTo(b.getName()); 
+		    } 
+		};
 	}
 	private static void dumpObject(Object o, Map<Object, Integer> done, String indent, PrintStream out){
 
@@ -37,10 +46,12 @@ public class ObjectTree {
 			out.println(formatName(o, id) + ";");
 			indent += INDENTATION;
 		
+			// Sort Field by name
 			Map<Field,Object> m = extractFields(o, done);
-			for (Map.Entry<Field,Object> entry : m.entrySet()){
-				Field k = entry.getKey();
-				Object v = entry.getValue();
+			SortedSet<Field> sortedSet = new TreeSet<Field>(getFieldComparator());
+			sortedSet.addAll(m.keySet());
+			for (Field k : sortedSet) {
+				Object v = m.get(k);
 				out.print(indent + k.getName() + ": ");
 				if (v == null){
 					dumpObject(v, done, indent, out);
@@ -55,7 +66,6 @@ public class ObjectTree {
 				}
 			
 			}
-
 		}
 	}
 	private static boolean isCollection(Object o) {
