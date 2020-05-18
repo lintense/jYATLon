@@ -50,7 +50,6 @@ public class ObjectTree {
 			Map<Field,Object> m = extractFields(o, done);
 			SortedSet<Field> sortedSet = new TreeSet<Field>(getFieldComparator());
 			sortedSet.addAll(m.keySet());
-			showSizeIfNeeded(o, sortedSet, indent, out);
 			for (Field k : sortedSet) {
 				Object v = m.get(k);
 				out.print(indent + k.getName() + ": ");
@@ -61,6 +60,7 @@ public class ObjectTree {
 					showMap((Map)v, done, indent, out);
 				} else if (v instanceof Collection){
 					dumpObject(v, done, indent, out);
+					showSizeIfNeeded(o, sortedSet, indent, out);
 					showCollection((Collection)v, done, indent, out);
 				} else {
 					dumpObject(v, done, indent, out);
@@ -78,7 +78,7 @@ public class ObjectTree {
 	 */
 	private static void showSizeIfNeeded(Object o, SortedSet<Field> sortedSet, String indent, PrintStream out) {
 		if (o instanceof Collection && !sortedSet.stream().anyMatch(p->p.getName().equals("size")))
-			out.print(indent + "size: (Integer)" + ((Collection)o).size());
+			out.println(indent + "size: (Integer)" + ((Collection)o).size());
 	}
 	private static boolean isCollection(Object o) {
 		Class c = o.getClass();
