@@ -45,11 +45,12 @@ public class ObjectTree {
 			
 			out.println(formatName(o, id) + ";");
 			indent += INDENTATION;
-		
+
 			// Sort Field by name
 			Map<Field,Object> m = extractFields(o, done);
 			SortedSet<Field> sortedSet = new TreeSet<Field>(getFieldComparator());
 			sortedSet.addAll(m.keySet());
+			showSizeIfNeeded(o, sortedSet, indent, out);
 			for (Field k : sortedSet) {
 				Object v = m.get(k);
 				out.print(indent + k.getName() + ": ");
@@ -67,6 +68,17 @@ public class ObjectTree {
 			
 			}
 		}
+	}
+	/**
+	 * @param o
+	 * @param sortedSet
+	 * @param indent
+	 * @param out
+	 * Some versions of Java have a useful size field for Collection that we want to keep!
+	 */
+	private static void showSizeIfNeeded(Object o, SortedSet<Field> sortedSet, String indent, PrintStream out) {
+		if (o instanceof Collection && !sortedSet.stream().anyMatch(p->p.getName().equals("size")))
+			out.print(indent + "size: (Integer)" + ((Collection)o).size());
 	}
 	private static boolean isCollection(Object o) {
 		Class c = o.getClass();
