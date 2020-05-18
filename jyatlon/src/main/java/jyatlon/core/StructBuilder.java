@@ -173,7 +173,7 @@ public class StructBuilder<T> extends YATLBaseListener {
 		Object getValue() {
 			if (children.isEmpty())
 				return ctx.getText();
-			throw new IllegalStateException("BUG: " + this.getArgName() + " text: " + ctx.getText() + " args: " + children.size());
+			throw new IllegalStateException("BUG: " + this.getArgName() + " text: " + ctx.getText() + " args: " + children.size() + " arg1: " + children.get(0));
 		}
 		<T> Struct<T> toStruct(Class<T> currentClass) throws Exception {
 //			Class<T> currentClass = builder.getSubclassForName(extractStructName());
