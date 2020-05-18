@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - openjdk9
+  - openjdk11
 script:
   - mvn -f jyatlon/pom.xml package
 after_success:
