@@ -2,7 +2,6 @@ package jyatlon.core;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -108,9 +107,9 @@ public class StructBuilder<T> extends YATLBaseListener {
 	 */
 	private static abstract class Base {
 //		abstract String getType();
-		boolean isSameStruct(Base b) {
-			return false;
-		}
+//		boolean isSameStruct(Base b) {
+//			return false;
+//		}
 		boolean isTerminal() {
 			return false;
 		}
@@ -179,9 +178,10 @@ public class StructBuilder<T> extends YATLBaseListener {
 		}
 		<T> Struct<T> toStruct(Class<T> currentClass) throws Exception {
 //			Class<T> currentClass = builder.getSubclassForName(extractStructName());
-			Object[] constructorParms = getContructorParms(currentClass);
+			
 			assert currentClass.getConstructors().length == 1; // Constraint #1
-			Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0]; 
+			Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0];
+			Object[] constructorParms = getContructorParms(currentConstructor);
 			T test = null;
 			try {
 				test = currentConstructor.newInstance(constructorParms);
@@ -193,7 +193,7 @@ public class StructBuilder<T> extends YATLBaseListener {
 			return new Struct<T>(test);
 		}
 		
-		private void showDebugInfo(Constructor c, Object[] constructorParms) {
+		private <T> void showDebugInfo(Constructor<T> c, Object[] constructorParms) {
 			System.out.println("Constructor Parms: " + c.getName() + Arrays.toString(c.getParameterTypes()));
 			String fields = "";
 			for (Field f : Arrays.asList(c.getDeclaringClass().getDeclaredFields()))
@@ -202,46 +202,27 @@ public class StructBuilder<T> extends YATLBaseListener {
 			System.out.println("Parameters values: " + Arrays.toString(constructorParms));
 		}
 
-		
 		/**
-		 * @param currentRule
-		 * @param currentClass
-		 * @param rules
+		 * @param currentConstructor
 		 * @return The arguments to pass to the constructor in order to generate a structure for this Rule.
 		 */
-		 Object[] getContructorParms(Class currentClass){
+		<T> Object[] getContructorParms(Constructor<T> currentConstructor){
+			Class<T> currentClass = currentConstructor.getDeclaringClass();
 			// Get the only constructor first
 			List<String> constructorsFields = Arrays.stream(currentClass.getDeclaredFields())
 					.map(f -> f.getName())
 					.collect(Collectors.toList());
-//			List<Field> constructorsFields = new ArrayList(Arrays.asList(currentClass.getDeclaredFields()));
 
-			Object[] constructorParms = new Object[constructorsFields.size() + ABSTRACT_STRUCT_PARM_SIZE];
-			
 			// Prepare the constructor parameters list
-//			List<Object> constructorParms = new ArrayList<Object>();
-//			constructorParms.add(ctx.start.getStartIndex());
-//			constructorParms.add(ctx.stop.getStopIndex());
+			Object[] constructorParms = new Object[currentConstructor.getParameterCount()];
 			constructorParms[0] = ctx.start.getStartIndex();
 			constructorParms[1] = ctx.stop.getStopIndex() + 1;
-			
-			
-			
+
 			// Use a Map to gather values
 			Set<String> collArgs = getCollectionParms();
 			Map<String,ArrayList<Object>> tempMap = new HashMap<String,ArrayList<Object>>();
 			children.forEach(a -> {
 				String argName = a.getArgName();
-//				try {
-//					// If an argument is not present then fill it with null
-//					while (!tempMap.containsKey(argName) && !argName.equals(constructorsFields.remove(0).getName()))
-//						constructorParms.add(null);
-//				} catch (Exception e) {
-//					System.out.println(currentClass.getDeclaredFields());
-					
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
 				if (collArgs.contains(argName)) {
 					if (tempMap.containsKey(argName))
 						tempMap.get(argName).add(a.getValue());
@@ -254,10 +235,7 @@ public class StructBuilder<T> extends YATLBaseListener {
 				} else
 					constructorParms[constructorsFields.indexOf(argName) + ABSTRACT_STRUCT_PARM_SIZE] = a.getValue();
 			});
-//			while (!constructorsFields.isEmpty()) {
-//				constructorsFields.remove(0);
-//				constructorParms.add(null);
-//			}
+
 			return constructorParms;
 		}
 	}
