@@ -1,6 +1,7 @@
 package jyatlon.core;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -173,24 +174,38 @@ public class StructBuilder<T> extends YATLBaseListener {
 		Object getValue() {
 			if (children.isEmpty())
 				return ctx.getText();
-			throw new IllegalStateException("BUG: " + this.getArgName() + " text: " + ctx.getText() + " args: " + children.size() + " arg1: " + children.get(0));
+			throw new IllegalStateException("BUG: " + this.getClass().getName() + " " + this.getArgName() + " text: " + ctx.getText() + " args: " + children.size() + " arg1: " + children.get(0));
 		}
 		<T> Struct<T> toStruct(Class<T> currentClass) throws Exception {
 //			Class<T> currentClass = builder.getSubclassForName(extractStructName());
-			Object[] constructorParms = getContructorParms(currentClass, children);
+			Object[] constructorParms = getContructorParms(currentClass);
 			assert currentClass.getConstructors().length == 1; // Constraint #1
 			Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0]; 
-			T test = currentConstructor.newInstance(constructorParms);
+			T test = null;
+			try {
+				test = currentConstructor.newInstance(constructorParms);
+				
+			} catch (Exception e) {
+				// TODO Auto-generated catch block)
+				showDebugInfo(currentConstructor, constructorParms);
+				e.printStackTrace();
+			} 
 			return new Struct<T>(test);
 		}
+		
+		private void showDebugInfo(Constructor c, Object[] constructorParms) {			
+			System.out.println(c.getName() + Arrays.toString(c.getParameterTypes()));
+			System.out.println(Arrays.toString(constructorParms));
+		}
+
 		
 		/**
 		 * @param currentRule
 		 * @param currentClass
-		 * @param children
+		 * @param rules
 		 * @return The arguments to pass to the constructor in order to generate a structure for this Rule.
 		 */
-		 Object[] getContructorParms(Class currentClass, List<Rule> children){
+		 Object[] getContructorParms(Class currentClass){
 			// Get the only constructor first
 			List<String> constructorsFields = Arrays.stream(currentClass.getDeclaredFields())
 					.map(f -> f.getName())
