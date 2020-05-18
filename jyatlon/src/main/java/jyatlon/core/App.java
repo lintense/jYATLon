@@ -21,50 +21,9 @@ public class App { // Rename to YATL
 
     public static void main( String[] args )
     {
-    	
-    	//generateStruct();
-    	
-    	/*
-        ANTLRInputStream inputStream = new ANTLRInputStream(
-            "hello you");
-        HelloLexer markupLexer = new HelloLexer(inputStream);
-        CommonTokenStream commonTokenStream = new CommonTokenStream(markupLexer);
-        HelloParser markupParser = new HelloParser(commonTokenStream);
-        HelloParser.RContext fileContext = markupParser.r();                
-        HelloVisitor visitor = new HelloVisitor();                
-        visitor.visit(fileContext);        
-        */
-        /*
-//--------------------- 
-		CharStream cs = new ANTLRInputStream(oclExp);
-		OCLSyntaxLexer lexer = new OCLSyntaxLexer(cs);
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		OCLSyntaxParser parser = new OCLSyntaxParser(tokens);
-
-		parser.setBuildParseTree(true);
-		ParseTree tree = parser.expression();
-		
-		// Extract definition from the parsed file
-		SyntaxProcessor listener = new SyntaxProcessor();
-		ParseTreeWalker walker = new ParseTreeWalker();
-		walker.walk(listener, tree);
-		
-		System.out.println("*** Dump three ***");
-		listener.dumpTree();
-		
-		TokenProcessor extractor = new TokenProcessor(reader);
-//		ExtractStructure extractor = new ExtractStructure(reader, new ParsingContext("Component"));
-//		OCLExpressionStructure exp = extractor.extractStructure(listener.getToken(), new ParsingContext(reader, "Component", 0));
-		
-		// The pivot is the component on which the given method will apply
-		ParsingContext.Pivot pivot = new ParsingContext.Pivot("Component"); // null = unknown type for self, break the translator
-		List<ParsingContext> contextList = extractor.getContextList(listener, pivot);
-        		*/
-//---------------------
-//    	String test = " === String ===\n\n\n" +
-//    		" a b### {}[begin]~c [if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)]x{begin X}yz\n";
-         
     	String test = "=$=\n{begin X}Hello {begin Y}Hello {{$.toString:X.toString:X}}{{$:Y}}!{end Y}!{end X}\n";
+    	
+    	
 		UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream((test.getBytes())));
 		YATLLexer lexer = new YATLLexer(input);
         lexer.setTokenFactory(new CommonTokenFactory(true));
@@ -73,11 +32,10 @@ public class App { // Rename to YATL
         ParseTree tree = parser.template(); // begin parsing at rule 'r'
 //        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         
-//        StructInitializer initializer = new StructInitializer();
-        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class); //, initializer); //MyListener(); //
+        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class);
         ParseTreeWalker walker = new ParseTreeWalker();
         walker.walk(myListener, tree);
-        Struct struct = myListener.getStruct(); // java.util.EmptyStackException
+        Struct struct = myListener.getStruct();
         
         Template t = (Template)struct;
         
@@ -88,10 +46,7 @@ public class App { // Rename to YATL
         
 //        t.test(t);
 	}
-//    public static Template getTemplate(String template) {
-//    	
-//    	return getBlock(getStruct(template));
-//    }
+
     static String process(String templateText, Object root) {
     	Template t = getTemplate(templateText);
     	BlockBuilder bb = new BlockBuilder(templateText);

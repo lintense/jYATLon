@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.StringWriter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -25,8 +26,8 @@ class AppTest {
 //	}
 	@Test
 	void testBeginEndControls() throws IOException {
-		String test = "=$=\n{begin ALIAS}Hello {{$:ALIAS}}!{end ALIAS}\n";
-		String obtained = App.process(test, "World");
+		String test = "{begin ALIAS}Hello {{$:ALIAS}}!{end ALIAS}";
+		String obtained = process(test, "World");
 		assertEquals("Hello World!", obtained);
 	}
 	@Test
@@ -71,6 +72,11 @@ class AppTest {
 		String obtained = baos.toString();
 		TestUtils.saveToFile(filename + ".last.txt", obtained);
 		return obtained;
+	}
+	private String process(String templateContent, Object root) throws IOException {
+		StringWriter w = new StringWriter();
+		YATL.fromString(templateContent).merge(root, w);
+		return w.toString();
 	}
 
 }
