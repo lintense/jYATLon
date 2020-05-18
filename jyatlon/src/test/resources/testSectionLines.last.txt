@@ -1,7 +1,6 @@
 Template@0;
     from: (Integer)0;
     section: ArrayList@1;
-        size: (Integer)3
         size: (Integer)3;
         0: Section@2;
             from: (Integer)0;
@@ -11,7 +10,6 @@ Template@0;
         1: Section@3;
             from: (Integer)4;
             line: ArrayList@4;
-                size: (Integer)1
                 size: (Integer)1;
                 0: Line@5;
                     from: (Integer)21;
@@ -21,7 +19,6 @@ Template@0;
                 anyPathOp: null;
                 from: (Integer)9;
                 pathName: ArrayList@7;
-                    size: (Integer)1
                     size: (Integer)1;
                     0: (String)"String";
                 to: (Integer)15;
@@ -33,7 +30,6 @@ Template@0;
                 anyPathOp: null;
                 from: (Integer)27;
                 pathName: ArrayList@10;
-                    size: (Integer)1
                     size: (Integer)1;
                     0: (String)"Object";
                 to: (Integer)33;

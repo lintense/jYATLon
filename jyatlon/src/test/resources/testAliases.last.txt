@@ -1,17 +1,14 @@
 Template@0;
     from: (Integer)0;
     section: ArrayList@1;
-        size: (Integer)1
         size: (Integer)1;
         0: Section@2;
             from: (Integer)0;
             line: ArrayList@3;
-                size: (Integer)2
                 size: (Integer)2;
                 0: Line@4;
                     from: (Integer)4;
                     lineExp: ArrayList@5;
-                        size: (Integer)3
                         size: (Integer)3;
                         0: LineExp@6;
                             commentOp: null;
@@ -37,7 +34,6 @@ Template@0;
                                     aliasName: (String)"Root";
                                     from: (Integer)9;
                                     operation: ArrayList@10;
-                                        size: (Integer)2
                                         size: (Integer)2;
                                         0: Operation@11;
                                             aliasName: (String)"Value";
@@ -65,7 +61,6 @@ Template@0;
                 1: Line@14;
                     from: (Integer)52;
                     lineExp: ArrayList@15;
-                        size: (Integer)3
                         size: (Integer)3;
                         0: LineExp@16;
                             commentOp: null;
@@ -91,7 +86,6 @@ Template@0;
                                     aliasName: (String)"Root";
                                     from: (Integer)57;
                                     operation: ArrayList@20;
-                                        size: (Integer)2
                                         size: (Integer)2;
                                         0: Operation@21;
                                             aliasName: (String)"Value";

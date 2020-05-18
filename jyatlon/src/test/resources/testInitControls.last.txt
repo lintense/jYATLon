@@ -1,17 +1,14 @@
 Template@0;
     from: (Integer)0;
     section: ArrayList@1;
-        size: (Integer)1
         size: (Integer)1;
         0: Section@2;
             from: (Integer)0;
             line: ArrayList@3;
-                size: (Integer)1
                 size: (Integer)1;
                 0: Line@4;
                     from: (Integer)4;
                     lineExp: ArrayList@5;
-                        size: (Integer)5
                         size: (Integer)5;
                         0: LineExp@6;
                             commentOp: null;
