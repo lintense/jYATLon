@@ -128,7 +128,6 @@
 		      <artifactId>surefire-logger-api</artifactId>
 		      <version>2.21.0</version>
 		      <!-- to get around bug https://github.com/junit-team/junit5/issues/1367 -->
-		      <scope>test</scope>
 		      <optional>true</optional>
 		    </dependency>
 	      </dependencies>
