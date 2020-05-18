@@ -30,37 +30,37 @@ class AppTest {
 		String obtained = process(test, "World");
 		assertEquals("Hello World!", obtained);
 	}
-//	@Test
-//	void testParsing1() throws IOException {
-//		String s = " === String ===\n\n\n" +
-//				" a b### {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
-//		String testName = showTestHeader("testParsing1");
-//		Template t = App.getTemplate(s);
-//		String obtained = getStructAsString(testName, t);
-//		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
-//		
-//	}
-//	@Test
-//	void testSectionLines() throws IOException {
-//		String testName = showTestHeader("testSectionLines");
-//		Template t = App.getTemplate(" === String === \n\n === Object ===");
-//		String obtained = getStructAsString(testName, t);
-//		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
-//	}
-//	@Test
-//	void testInitControls() throws IOException {
-//		String testName = showTestHeader("testInitControls");
-//		Template t = App.getTemplate("{begin X}{before X}{between X}{after X}{end X}");
-//		String obtained = getStructAsString(testName, t);
-//		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
-//	}
-//	@Test
-//	void testAliases() throws IOException {
-//		String testName = showTestHeader("testAliases");
-//		Template t = App.getTemplate("abc{{$:Root.toString:Value.toString:String}}def\nghi{{$:Root.toString:Value.toString:String}}jkl");
-//		String obtained = getStructAsString(testName, t);
-//		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
-//	}
+	@Test
+	void testParsing1() throws IOException {
+		String s = " === String ===\n\n\n" +
+				" a b### {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
+		String testName = showTestHeader("testParsing1");
+		Template t = App.getTemplate(s);
+		String obtained = getStructAsString(testName, t);
+		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
+		
+	}
+	@Test
+	void testSectionLines() throws IOException {
+		String testName = showTestHeader("testSectionLines");
+		Template t = App.getTemplate(" === String === \n\n === Object ===");
+		String obtained = getStructAsString(testName, t);
+		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
+	}
+	@Test
+	void testInitControls() throws IOException {
+		String testName = showTestHeader("testInitControls");
+		Template t = App.getTemplate("{begin X}{before X}{between X}{after X}{end X}");
+		String obtained = getStructAsString(testName, t);
+		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
+	}
+	@Test
+	void testAliases() throws IOException {
+		String testName = showTestHeader("testAliases");
+		Template t = App.getTemplate("abc{{$:Root.toString:Value.toString:String}}def\nghi{{$:Root.toString:Value.toString:String}}jkl");
+		String obtained = getStructAsString(testName, t);
+		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
+	}
 	private String showTestHeader(String testName) {
 		System.out.println("### " + testName + " ###");
 		return testName;

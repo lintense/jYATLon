@@ -20,19 +20,28 @@ import jyatlon.generated.YATLBaseListener;
 /**
  * @author linte
  * SRP: This class is responsible to create a new structure from the AST resulting from parsing.
- * The package of the structure to generate should be pass as a parameter.
- * The structure to create MUST comply to certain rules.
- * All the subclasses of your struct <T> class MUST be inner classes so they can be found using getDeclaredClasses()
- * The constructors MUST be public
- * The main hacks are in the grammar file:
- * Instructions:
- * All names ending by "Arg", "Name", "Op" should be terminals and will be send to constructor as a String
- * All names ending by "Exp" are considered to have a terminal Collection arg.
- * Always wrap Terminals so we can drop them
- * Use literals instead of ALIASES gives better error messages on parsing errors
- * TODO - Could be improved to return all the possible constructor which would avoid runtime errors
  * 
- * Constraint #1 - Every subclasses of class T has only ONE constructor!
+ * This is a very simple quite powerful parser that will read the ANTLR generated tree and create a nice Java Struct from it.
+ * The nicest thing is that the Struct class will be generated for you using the StructGen.main method.
+ * This will insure that your Struct class to be always in perfect sync with the Grammar.
+ * The binding between the Struct and the rest of the application is insured by Java.
+ * 
+ * Instructions for the Struct (aka <T>) class hierarchy:
+ * - The structure to generate is passed as a parameter.
+ * - All the subclasses of the Struct class MUST be inner classes so they can be found easily using getDeclaredClasses()
+ * - All the constructors MUST be public.
+ * 
+ * Instructions for the Grammar (*.g4) file:
+ * - All names ending by "Arg", "Name", "Op" should be terminals and will be send to the Struct constructors as Strings
+ * - All names ending by "Exp" are considered to have a terminal constructor Collection parameter argument.
+ * - Always wrap Terminals ("Arg", "Name", "Op") so we can drop them.
+ * - Using literals (such as ',') instead of ALIASES (such as COMMA) gives better error parsing error messages (1).
+ * (1) Not my fault, this is how ANTLR works!
+ * 
+ * TODO - Could be improved to return all the possible constructor which would avoid runtime errors
+ * TODO - Need better/proper logging
+ * 
+ * Constraint #1 - Every subclasses of class T must have only ONE constructor!
  * 
  * 
  */
@@ -76,16 +85,9 @@ public class StructBuilder<T> extends YATLBaseListener {
 			currentRule = children.get(0);
 		else if (!currentRule.isTerminal()) { // Do not create a Struct for terminal types
 			try {
-				// Create new object
 				Class<T> currentClass = getSubclassForName(currentRule.extractStructName());
-				if (currentClass != null) {
+				if (currentClass != null)
 					currentRule = currentRule.toStruct(currentClass);
-//					List<Object> constructorParms = currentRule.getContructorParms(currentClass, children);
-//					Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0];
-//					Object test = currentConstructor.newInstance(constructorParms.toArray());
-//					currentRule = new Struct((jyatlon.core.Struct)test, currentRule.getArgName());
-				} //else
-					//currentRule = new Struct(currentRule.getValue());
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -106,10 +108,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 	 * @param <T>
 	 */
 	private static abstract class Base {
-//		abstract String getType();
-//		boolean isSameStruct(Base b) {
-//			return false;
-//		}
 		boolean isTerminal() {
 			return false;
 		}
@@ -123,10 +121,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 			if (struct == null)
 				throw new IllegalArgumentException();
 		}
-//		@Override
-//		String getType() {
-//			return extractStructName();
-//		}
 		@Override
 		Object getValue() {
 			return struct;
@@ -149,18 +143,8 @@ public class StructBuilder<T> extends YATLBaseListener {
 				.map(m -> m.getName())
 				.collect(Collectors.toSet());
 		}
-//		static String getRuleType(String pseudoType) {
-//			return pseudoType.endsWith("Arg") || pseudoType.endsWith("Name") || pseudoType.endsWith("Op") ? "String" : pseudoType;
-//		}
-//		@Override
-//		String getType() {
-//			return getRuleType(extractStructName());
-//		}
-		
 		boolean isSameStruct(Rule r) {
 			return extractStructName().equals(r.extractStructName());
-//					r != null && r.ctx != null && ctx != null && r.ctx.getClass() == ctx.getClass();
-//			return b instanceof Rule && ((Rule)b);
 		}
 		String getArgName() {
 			return Utils.toLowerFirst(extractStructName());
@@ -177,8 +161,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 			throw new IllegalStateException("BUG: " + this.getClass().getName() + " " + this.getArgName() + " text: " + ctx.getText() + " args: " + children.size() + " arg1: " + children.get(0));
 		}
 		<T> Struct<T> toStruct(Class<T> currentClass) throws Exception {
-//			Class<T> currentClass = builder.getSubclassForName(extractStructName());
-			
 			assert currentClass.getConstructors().length == 1; // Constraint #1
 			Constructor<T> currentConstructor = (Constructor<T>)currentClass.getConstructors()[0];
 			Object[] constructorParms = getContructorParms(currentConstructor);
@@ -192,7 +174,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 			} 
 			return new Struct<T>(test);
 		}
-		
 		private <T> void showDebugInfo(Constructor<T> c, Object[] constructorParms) {
 			System.out.println("Constructor Parms: " + c.getName() + Arrays.toString(c.getParameterTypes()));
 			String fields = "";
@@ -235,7 +216,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 				} else
 					constructorParms[constructorsFields.indexOf(argName) + ABSTRACT_STRUCT_PARM_SIZE] = a.getValue();
 			});
-
 			return constructorParms;
 		}
 	}
@@ -245,10 +225,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 			super();
 			this.node = node;
 		}
-//		@Override
-//		String getType() {
-//			return "String";
-//		}
 		@Override
 		boolean isTerminal() {
 			return true;
