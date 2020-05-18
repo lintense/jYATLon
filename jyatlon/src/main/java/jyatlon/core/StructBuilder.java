@@ -1,6 +1,7 @@
 package jyatlon.core;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -184,7 +185,6 @@ public class StructBuilder<T> extends YATLBaseListener {
 			T test = null;
 			try {
 				test = currentConstructor.newInstance(constructorParms);
-				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block)
 				showDebugInfo(currentConstructor, constructorParms);
@@ -193,9 +193,13 @@ public class StructBuilder<T> extends YATLBaseListener {
 			return new Struct<T>(test);
 		}
 		
-		private void showDebugInfo(Constructor c, Object[] constructorParms) {			
-			System.out.println(c.getName() + Arrays.toString(c.getParameterTypes()));
-			System.out.println(Arrays.toString(constructorParms));
+		private void showDebugInfo(Constructor c, Object[] constructorParms) {
+			System.out.println("Constructor Parms: " + c.getName() + Arrays.toString(c.getParameterTypes()));
+			String fields = "";
+			for (Field f : Arrays.asList(c.getClass().getDeclaredFields()))
+				fields += "," + f.getName();
+			System.out.println("Declared Fields: " + fields.substring(1));
+			System.out.println("Parameters values: " + Arrays.toString(constructorParms));
 		}
 
 		
