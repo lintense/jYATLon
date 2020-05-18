@@ -2,7 +2,9 @@ package jyatlon.core;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,7 +15,7 @@ import jyatlon.generated.YATLParser;
 
 /**
  * @author linte
- * SRP: Hide the implementation of the path mecanism
+ * SRP: Hide the implementation of the path mechanism
  */
 public class Path {
 
@@ -21,9 +23,9 @@ public class Path {
 	private static final String ANYPATH = YATLParser.VOCABULARY.getLiteralName(YATLParser.ANYPATH).replace("'", "");
 	
 	// This is a naive implementation
-	private final String[] aliases;
-	private final String[] classes;
-	private final Object[] objects;
+	public final String[] aliases;
+	public final String[] classes;
+	public final Object[] objects;
 	
 	public Path(String pathName, String pathAlias, Object obj) {
 		this.aliases = new String[] {pathAlias};
@@ -80,6 +82,33 @@ public class Path {
 	}
 	public String getPathName() {
 		return String.join(Path.SEPARATOR, classes);
+	}
+// The following is not good because duplication is allowed is the objects are the same
+//	public boolean hasDuplicatedAliases() {
+//		Set<String> alreadyFound = new HashSet<String>();
+//		for (String alias : aliases)
+//			if (alreadyFound.contains(alias))
+//				return true;
+//			else
+//				alreadyFound.add(alias);
+//		return false;
+//	}
+//	public int getLastAliasIndex(String alias){
+//		for (int i = aliases.length; i > 0; i--)
+//			if (alias.equals(aliases[i-1]))
+//				return i-1;
+//		return -1;
+//	}
+	public boolean canAddAliasObjectToMap(Map<String, Object> aliasObjects) {
+		for (int i = 0; i < aliases.length; i++) {
+			if (aliases[i] != null) {
+				Object newObj = objects[i];
+				Object previousObj = aliasObjects.put(aliases[i], newObj);
+				if (previousObj != null && !Matcher.isSameObject(newObj, previousObj))
+					return false;
+			}
+		}
+		return true;
 	}
 	
 	public static class CallPath extends Path {

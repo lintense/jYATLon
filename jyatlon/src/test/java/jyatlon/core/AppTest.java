@@ -24,6 +24,12 @@ class AppTest {
 //		fail("Not yet implemented");
 //	}
 	@Test
+	void testBeginEndControls() throws IOException {
+		String test = "=$=\n{begin ALIAS}Hello {{$:ALIAS}}!{end ALIAS}\n";
+		String obtained = App.process(test, "World");
+		assertEquals("Hello World!", obtained);
+	}
+	@Test
 	void testParsing1() throws IOException {
 		String s = " === String ===\n\n\n" +
 				" a b### {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
@@ -66,4 +72,5 @@ class AppTest {
 		TestUtils.saveToFile(filename + ".last.txt", obtained);
 		return obtained;
 	}
+
 }

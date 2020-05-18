@@ -204,7 +204,7 @@ public class StructBuilder<T> extends YATLBaseListener {
 //			constructorParms.add(ctx.start.getStartIndex());
 //			constructorParms.add(ctx.stop.getStopIndex());
 			constructorParms[0] = ctx.start.getStartIndex();
-			constructorParms[1] = ctx.stop.getStopIndex();
+			constructorParms[1] = ctx.stop.getStopIndex() + 1;
 			
 			
 			

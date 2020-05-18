@@ -1,9 +1,7 @@
 package jyatlon.core;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -12,26 +10,29 @@ import java.util.stream.Collectors;
 
 import jyatlon.core.Block.ControlBlock;
 import jyatlon.core.Block.ControlOperator;
+import jyatlon.core.Block.OperationBlock;
 import jyatlon.core.Block.PathBlock;
 import jyatlon.core.Block.TextBlock;
 import jyatlon.core.Block.ValueBlock;
 import jyatlon.core.Path.CallPath;
 import jyatlon.core.Struct.ControlExp;
 import jyatlon.core.Struct.Line;
-import jyatlon.core.Struct.LineExp;
+import jyatlon.core.Struct.Operation;
+import jyatlon.core.Struct.PathExp;
 import jyatlon.core.Struct.Section;
 import jyatlon.core.Struct.Template;
-import jyatlon.core.Struct.Value;
+import jyatlon.core.Struct.ValueExp;
 import jyatlon.generated.YATLLexer;
 
 /**
  * @author linte
- * SRP - A stateless Struct to Block data structure converter.
+ * SRP - A stateless "Struct to Block" data structure converter.
  * Struct is used as a facade when the Template Language is updated
  * Block is the actual structure that is to be processed.
  */
 public class BlockBuilder {
 	
+	public static final String ROOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT));
 	
 	private final String fullText;
 	public BlockBuilder(String fullText) {
@@ -42,8 +43,6 @@ public class BlockBuilder {
 		return fullText.substring(s.from, s.to);
 	}
 
-	
-	private static final String ROOT = YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT);
 	/**
 	 * @param t
 	 * @return
@@ -54,7 +53,7 @@ public class BlockBuilder {
 		if (t.section == null)
 			return null;
 		
-		Map<String,PathBlock> pathBlocks = new HashMap();
+		Map<String,PathBlock> pathBlocks = new HashMap<String,PathBlock>();
 		t.section.forEach(section -> {
 			PathBlock b = parseSection(section);
 			pathBlocks.put(b.pathname, b);
@@ -87,12 +86,25 @@ public class BlockBuilder {
 		
 		// Process lines
 		List<Block> blocks = parseLines(lines);
+		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.getPathName(), cp, blocks);
 		
+		// Compute value blocks
+		ControlBlock cb = extractControlBlock(new ControlBlock(pb, ROOT), blocks.iterator());
+//		cb.setValues(extractControlValues(cb));
+		pb.init(cb);
 		
-		return new PathBlock(cp.getPathName(), cp, blocks);
+		return pb;
+	}
+	CallPath parseCallPath(PathExp path) {
+		// First Section Path is null for now
+		// Useless to create a Path here since we dont know the actual root Object type
+		if (path == null)
+			return null;
+		
+		return null;
 	}
 	List<Block> parseLines(List<Line> lines){
-		Stack<Block> result = new Stack();
+		Stack<Block> result = new Stack<Block> ();
 		StringBuffer buffer = new StringBuffer();
 //		Map<String,ControlBlock[]> controls = new HashMap();
 
@@ -101,12 +113,9 @@ public class BlockBuilder {
 			AtomicBoolean insideComment = new AtomicBoolean(false);
 			line.lineExp.forEach(lineExp -> {
 				
-				switch (getLineExpCase(lineExp)) {
-				
-				case LINE_EXP_IS_COMMENT :
+				if (lineExp.commentOp != null) {
 					insideComment.set(!insideComment.get());
-					break;
-				case LINE_EXP_IS_CONTROL :
+				} else if (lineExp.controlExp != null) {
 					if (!insideComment.get()) {
 						if (buffer.length() > 0) {
 							result.add(new TextBlock(buffer.toString()));
@@ -114,30 +123,33 @@ public class BlockBuilder {
 						}
 						result.add(parseControlExp(lineExp.controlExp));
 					}
-				case LINE_EXP_IS_ESCAPE :
+				} else if (lineExp.escapedChar != null) {
 					if (!insideComment.get()) {
 						String esc = getStructText(lineExp);
 						buffer.append(esc.charAt(esc.length()-1)); // Remove escape code
 					}
-				case LINE_EXP_IS_RAW_TEXT :
+				} else if (lineExp.rawText != null) {
 					if (!insideComment.get()) {
 						buffer.append(getStructText(lineExp));
 					}
-				case LINE_EXP_IS_VALUE :
+				} else if (lineExp.value != null) {
 					if (!insideComment.get()) {
 						if (buffer.length() > 0) {
 							result.add(new TextBlock(buffer.toString()));
 							buffer.setLength(0);
 						}
-						result.add(parseValue(lineExp.value));
+						if (lineExp.value.valueExp != null)
+							result.add(parseValue(lineExp.value.valueExp));
+						else
+							throw new IllegalStateException("To be implemented"); // FIXME
 					}
-				default:
+				} else {
 					throw new IllegalStateException("Not yet implemented line exp type");
 				}
 			});
 
 			// Add new line if needed
-			if (!insideComment.get()) {
+			if (!result.isEmpty() && !insideComment.get()) {
 				if (result.peek().isControlOperator() && buffer.toString().trim().isEmpty())
 					buffer.setLength(0);
 			}
@@ -145,56 +157,53 @@ public class BlockBuilder {
 		}); // line
 		if (buffer.length() > 0)
 			result.add(new TextBlock(buffer.toString()));
-
-		
-		// Process resulting list to insert control operators into their parent control block
-		List<Block> temp = new ArrayList();
-		result.forEach(block -> {
-			
-			if (block.isControlOperator()) {
-				ControlOperator co = (ControlOperator)block;
-				ControlBlock cb = new ControlBlock(co.aliasName);
-				
-				
-				
-				
-			}
-				
-			
-			
-		});
-		
-		
-		
-		
 		return result;
 	}
-	ValueBlock parseValue(Value value) {
 
-		return new ValueBlock(value.valueExp); // For now, keep the struct
+	ControlBlock extractControlBlock(ControlBlock currentBlock, Iterator<Block> i) {
+
+		Map<Integer,ControlOperator> activeControl = new HashMap<Integer,ControlOperator>();
+		while (i.hasNext()) {
+			Block b = i.next();
+			if (b.isControlOperator()) {
+				ControlOperator co = (ControlOperator)b;
+				boolean sameAlias = co.aliasName.equals(currentBlock.aliasName);
+				if (!sameAlias && co.operation == ControlBlock.CONTROL_BEGIN) {
+					currentBlock.addBlock(extractControlBlock(new ControlBlock(currentBlock, co), i)); // Extract sub block
+				} else if (co.operation == ControlBlock.CONTROL_BEGIN)
+					throw new IllegalStateException("Duplicated {begin:" + co.aliasName + "}") ;
+				else if (sameAlias && co.operation == ControlBlock.CONTROL_END) {
+					activeControl.put(co.operation, co);
+					return currentBlock.init(activeControl);
+				} else if (sameAlias)
+					activeControl.put(co.operation, co);
+				else
+					throw new IllegalStateException("Missing {begin:" + co.aliasName + "}") ;
+			} else if (b.isValue() && activeControl.isEmpty())
+				currentBlock.addBlock(b);
+			else if (b.isValue())
+				throw new IllegalStateException("Value not into {begin:" + currentBlock.aliasName + "}") ;
+			else if (b.isText())
+				currentBlock.addBlock(b);
+			else
+				throw new IllegalStateException("Cannot insert " + b.getClass().getSimpleName() + " into ControlBlock");
+		}
+		if (currentBlock.isSectionBlock())
+			return currentBlock;
+		throw new IllegalStateException("Missing {begin:" + currentBlock.aliasName + "}");
 	}
-	private static final int LINE_EXP_IS_UNKNOWN = 0; // Should never happen!
-	private static final int LINE_EXP_IS_COMMENT = 1;
-	private static final int LINE_EXP_IS_CONTROL = 2;
-	private static final int LINE_EXP_IS_ESCAPE = 3;
-	private static final int LINE_EXP_IS_RAW_TEXT = 4;
-	private static final int LINE_EXP_IS_VALUE = 5;
-	private static int getLineExpCase(LineExp exp) {
-		return exp.commentOp != null ? LINE_EXP_IS_COMMENT
-			: exp.controlExp != null ? LINE_EXP_IS_CONTROL
-			: exp.escapedChar != null ? LINE_EXP_IS_ESCAPE
-			: exp.rawText != null ? LINE_EXP_IS_RAW_TEXT
-			: exp.value != null ? LINE_EXP_IS_VALUE
-			: LINE_EXP_IS_UNKNOWN;	
+	ValueBlock parseValue(ValueExp value) {
+		// For now, Value is expected to be a valueExp...
+		ValueBlock result = new ValueBlock(value.valueArg, value.aliasName);
+		if (value.operation != null && !value.operation.isEmpty())
+			value.operation.forEach(o->result.addOperation(parseOperation(o)));
+		return result;
 	}
-	
-	
-	private static final String AVAILABLE_CONTROLS = "        |begin    |before   |between  |after    |end      |empty    |prepare  |call     ";
-//	private static final int CONTROL_MAX = AVAILABLE_CONTROLS.length()/10;
-	private static final int CONTROLS_WORD_LENGTH = AVAILABLE_CONTROLS.indexOf('|') + 1;
-	private static final int CONTROL_END = extractControlId("end");
-	private static int extractControlId(String controlName) {
-		return AVAILABLE_CONTROLS.indexOf(controlName)/CONTROLS_WORD_LENGTH;
+	OperationBlock parseOperation(Operation op) {
+		OperationBlock result = new OperationBlock(op.methodName, op.aliasName);
+		if (op.argExp != null && op.argExp.valueExp != null && !op.argExp.valueExp.isEmpty())
+			op.argExp.valueExp.forEach(a->result.addArgument(parseValue(a)));
+		return result;
 	}
 	ControlOperator parseControlExp(ControlExp ce) {
 //		ControlExp ce = lineExp.controlExp;
@@ -204,8 +213,56 @@ public class BlockBuilder {
 		// TODO Validate not already filled
 //		array[i] = ce;
 //		controls.put(ce.aliasName, array);
-		int operationId = extractControlId(ce.controlOp);
-		boolean isEndOfBlock = operationId == CONTROL_END;
+		int operationId = ControlBlock.extractControlId(ce.controlOp);
+		boolean isEndOfBlock = operationId == ControlBlock.CONTROL_END;
 		return new ControlOperator(isEndOfBlock, ce.aliasName, operationId);
 	}
+	/* CRAP
+	ControlBlock extractControlBlocks(PathBlock currentSection, List<Block> sectionBlocks) {
+		
+		// Process resulting list to insert control operators into their parent control block	
+		Stack<List<ControlBlock>> subControls = new Stack<List<ControlBlock>>();
+		subControls.push(new ArrayList<ControlBlock>());
+		
+		// Push new Control for this section
+		Stack<ControlBlock> currentControlBlock = new Stack<ControlBlock> ();
+		currentControlBlock.push(new ControlBlock(currentSection));
+
+		// All the control blocks that are currently being parsed
+		int index = 0;
+		Map<String,Map<Integer,ControlOperator>> activeControl = new HashMap<String,Map<Integer,ControlOperator>>();
+		for (Block block : sectionBlocks) {
+			if (block.isControlOperator()) {
+				ControlOperator co = (ControlOperator)block;
+				if (co.operation == ControlBlock.CONTROL_BEGIN) { // Add to active map
+					currentControlBlock.push(new ControlBlock(currentControlBlock.peek(), index, sectionBlocks, co.aliasName));
+					subControls.peek().add(currentControlBlock.peek());
+					subControls.push(new ArrayList<ControlBlock>());
+					Map<Integer,ControlOperator> inner = new HashMap<Integer,ControlOperator>();
+					inner.put(co.operation, co);
+					activeControl.put(co.aliasName, inner);
+				} else if (co.operation == ControlBlock.CONTROL_END) { // Remove from active map
+					Map<Integer,ControlOperator> inner = activeControl.remove(co.aliasName);
+					inner.put(co.operation, co);
+					ControlBlock cb = currentControlBlock.pop();
+					if (!cb.aliasName.equals(co.aliasName))
+						throw new IllegalStateException("Invalid imbrication. Expecting {end:" + cb.aliasName + "}");
+					cb.init(index, subControls.pop(), inner);
+				} else {
+					if (!activeControl.containsKey(co.aliasName))
+						throw new IllegalStateException("Missing {begin:" + co.aliasName + "}") ;
+					activeControl.get(co.aliasName).put(co.operation,co);
+				}
+			}
+			index++;
+		};
+		ControlBlock cb = currentControlBlock.pop();
+		if (currentControlBlock.size() > 0)
+			throw new IllegalStateException("Missing {end:" + cb.aliasName + "}") ;
+		
+		
+		cb.init(index, subControls.pop(), Collections.emptyMap());
+		return cb;
+	}
+	*/
 }

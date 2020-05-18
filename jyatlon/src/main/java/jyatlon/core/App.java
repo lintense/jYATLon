@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import jyatlon.core.Block.PathBlock;
 import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
@@ -60,10 +61,11 @@ public class App { // Rename to YATL
 		List<ParsingContext> contextList = extractor.getContextList(listener, pivot);
         		*/
 //---------------------
-		UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream((
-" === String ===\n\n\n" +
-" a b### {}[begin]~c [if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)]x{begin X}yz\n").getBytes()));
-        
+//    	String test = " === String ===\n\n\n" +
+//    		" a b### {}[begin]~c [if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)]x{begin X}yz\n";
+         
+    	String test = "=$=\n{begin X}Hello {begin Y}Hello {{$.toString:X.toString:X}}{{$:Y}}!{end Y}!{end X}\n";
+		UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream((test.getBytes())));
 		YATLLexer lexer = new YATLLexer(input);
         lexer.setTokenFactory(new CommonTokenFactory(true));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -78,6 +80,12 @@ public class App { // Rename to YATL
         Struct struct = myListener.getStruct(); // java.util.EmptyStackException
         
         Template t = (Template)struct;
+        
+        Block.PathBlock pb = getBlock(test, t);
+        StringWriter sw = new StringWriter();
+        BlockProcessor.merge(pb, sw, "World");
+        System.out.println(sw.toString());
+        
 //        t.test(t);
 	}
 //    public static Template getTemplate(String template) {
