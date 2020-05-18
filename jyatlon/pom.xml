@@ -206,7 +206,7 @@
     <profile>
        <id>surefire-java8</id>
        <activation>
-           <jdk>[1.8</jdk>
+           <jdk>[1.8,1.9)</jdk>
        </activation>
        <build>
            <plugins>
