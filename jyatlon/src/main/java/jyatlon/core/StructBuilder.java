@@ -196,7 +196,7 @@ public class StructBuilder<T> extends YATLBaseListener {
 		private void showDebugInfo(Constructor c, Object[] constructorParms) {
 			System.out.println("Constructor Parms: " + c.getName() + Arrays.toString(c.getParameterTypes()));
 			String fields = "";
-			for (Field f : Arrays.asList(c.getClass().getDeclaredFields()))
+			for (Field f : Arrays.asList(c.getDeclaringClass().getDeclaredFields()))
 				fields += "," + f.getName();
 			System.out.println("Declared Fields: " + fields.substring(1));
 			System.out.println("Parameters values: " + Arrays.toString(constructorParms));
