@@ -1,0 +1,3 @@
+ignore:
+  - "jyatlon/src/main/java/jyatlon/dev"  # Development stuff
+  - "jyatlon/src/main/java/jyatlon/generated"  # Generated stuff
