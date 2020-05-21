@@ -110,17 +110,7 @@ public class Path {
 //				return i-1;
 //		return -1;
 //	}
-	public boolean canAddAliasObjectToMap(Map<String, Object> aliasObjects) {
-		for (int i = 0; i < aliases.length; i++) {
-			if (aliases[i] != null) {
-				Object newObj = objects[i];
-				Object previousObj = aliasObjects.put(aliases[i], newObj);
-				if (previousObj != null && !Matcher.isSameObject(newObj, previousObj))
-					return false;
-			}
-		}
-		return true;
-	}
+
 	
 
 	public static class ValuePath extends Path {

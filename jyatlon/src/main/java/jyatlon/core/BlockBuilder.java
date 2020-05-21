@@ -33,9 +33,11 @@ import jyatlon.generated.YATLLexer;
 /**
  * @author linte
  * SRP - A stateless "Struct to Block" data structure converter.
- * Struct is used as a facade when the Template Language is updated
- * Block is the actual structure that is to be processed.
- * TODO all methods should be static to ensure thread safety
+ * Struct is used as a facade when the Template Language is updated.
+ * Block is the actual structure that is to be processed by the template.
+ * 
+ * TODO all methods should be static to ensure thread safety (ok)
+ * 
  */
 public class BlockBuilder {
 	
@@ -56,6 +58,9 @@ public class BlockBuilder {
 	 * PathBlock contains a list of <Text|Value>
 	 */
 	public static Map<String,PathBlock> parseTemplate(String fullText, Template t) {
+		
+		System.out.println("Starting parse process...");
+		long t1 = System.currentTimeMillis();
 		
 		if (t.section == null)
 			return null;
@@ -93,6 +98,9 @@ public class BlockBuilder {
 			vb.call.setBlockToCall(toCall);
 		}));
 		
+		long t2 = System.currentTimeMillis();
+		System.out.println("Completed in " + (t2-t1) + " milliseconds.");
+		
 		return pathBlocks;
 	}
 	/**
@@ -107,6 +115,8 @@ public class BlockBuilder {
 	(the only exception is when a call path is relative but its parent is absolute. In which
 	case the parent path is prepended and the path become absolute...).
 	- If the call is absolute then we check for an exactly matching absolute destination
+	- If a call contains an alias then it MUST be present in the destination (not tested)
+	- Multi aliases in the caller and destination are not supported.
 	
 	- If the call is relative, then we add the parent class chain (not the parent alias)
 	.../Z = W/X/Y/Z making it an absolute chain.
@@ -117,6 +127,7 @@ public class BlockBuilder {
 	- The single longest compatible destination path is selected (matching alias taken into account!).
 	- Use an alias to discriminate between such destinations.
 	- Aliases in destinations will be used has a preferred choice but ARE NOT mandatory.
+	
 	(Note that if a destination with matching alias is found then it will be selected)
 	- Only the last alias of destination is taken into account when computing the absolute path name.
 	
@@ -242,10 +253,8 @@ public class BlockBuilder {
 	private static List<Block> parseLines(String fullText, List<Line> lines){
 		Stack<Block> result = new Stack<Block> ();
 		StringBuffer buffer = new StringBuffer();
-//		Map<String,ControlBlock[]> controls = new HashMap();
 
 		lines.forEach(line -> {
-			
 			AtomicBoolean insideComment = new AtomicBoolean(false);
 			line.lineExp.forEach(lineExp -> {
 				
@@ -296,7 +305,6 @@ public class BlockBuilder {
 		return result;
 	}
 	private static ControlBlock extractControlBlock(ControlBlock currentBlock, Iterator<Block> i) {
-
 		Map<Integer,ControlOperator> activeControl = new HashMap<Integer,ControlOperator>();
 		while (i.hasNext()) {
 			Block b = i.next();
@@ -331,8 +339,6 @@ public class BlockBuilder {
 		ValueBlock result = new ValueBlock(value.valueExp.valueArg, value.valueExp.aliasName, parseCallExp(value.callExp));
 		if (value.valueExp.operation != null && !value.valueExp.operation.isEmpty())
 			value.valueExp.operation.forEach(o->result.addOperation(parseOperation(o)));
-		
-		// TODO validate that
 		if (result.call != null && !result.call.isValidForValue())
 			throw new IllegalStateException("Alias only allowed at the end of a call in " + result.call.name);
 		return result;
@@ -361,52 +367,4 @@ public class BlockBuilder {
 		boolean isEndOfBlock = operationId == ControlBlock.CONTROL_END;
 		return new ControlOperator(isEndOfBlock, ce.aliasName, operationId);
 	}
-	/* CRAP
-	ControlBlock extractControlBlocks(PathBlock currentSection, List<Block> sectionBlocks) {
-		
-		// Process resulting list to insert control operators into their parent control block	
-		Stack<List<ControlBlock>> subControls = new Stack<List<ControlBlock>>();
-		subControls.push(new ArrayList<ControlBlock>());
-		
-		// Push new Control for this section
-		Stack<ControlBlock> currentControlBlock = new Stack<ControlBlock> ();
-		currentControlBlock.push(new ControlBlock(currentSection));
-
-		// All the control blocks that are currently being parsed
-		int index = 0;
-		Map<String,Map<Integer,ControlOperator>> activeControl = new HashMap<String,Map<Integer,ControlOperator>>();
-		for (Block block : sectionBlocks) {
-			if (block.isControlOperator()) {
-				ControlOperator co = (ControlOperator)block;
-				if (co.operation == ControlBlock.CONTROL_BEGIN) { // Add to active map
-					currentControlBlock.push(new ControlBlock(currentControlBlock.peek(), index, sectionBlocks, co.aliasName));
-					subControls.peek().add(currentControlBlock.peek());
-					subControls.push(new ArrayList<ControlBlock>());
-					Map<Integer,ControlOperator> inner = new HashMap<Integer,ControlOperator>();
-					inner.put(co.operation, co);
-					activeControl.put(co.aliasName, inner);
-				} else if (co.operation == ControlBlock.CONTROL_END) { // Remove from active map
-					Map<Integer,ControlOperator> inner = activeControl.remove(co.aliasName);
-					inner.put(co.operation, co);
-					ControlBlock cb = currentControlBlock.pop();
-					if (!cb.aliasName.equals(co.aliasName))
-						throw new IllegalStateException("Invalid imbrication. Expecting {end:" + cb.aliasName + "}");
-					cb.init(index, subControls.pop(), inner);
-				} else {
-					if (!activeControl.containsKey(co.aliasName))
-						throw new IllegalStateException("Missing {begin:" + co.aliasName + "}") ;
-					activeControl.get(co.aliasName).put(co.operation,co);
-				}
-			}
-			index++;
-		};
-		ControlBlock cb = currentControlBlock.pop();
-		if (currentControlBlock.size() > 0)
-			throw new IllegalStateException("Missing {end:" + cb.aliasName + "}") ;
-		
-		
-		cb.init(index, subControls.pop(), Collections.emptyMap());
-		return cb;
-	}
-	*/
 }

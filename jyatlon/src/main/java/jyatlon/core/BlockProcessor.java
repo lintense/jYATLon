@@ -29,18 +29,23 @@ public class BlockProcessor {
 	public static void merge(PathBlock pb, Writer w, Object r) {
 
 		try {
-			writeBlock(pb, w, r);
+			System.out.println("Starting merge process...");
+			long t1 = System.currentTimeMillis();
+			Matcher matcher = new Matcher();
+			writeBlock(pb, w, r, matcher);
+			long t2 = System.currentTimeMillis();
+			System.out.println("Completed in " + (t2-t1) + " milliseconds.");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	private static void writeBlock(PathBlock pb, Writer w, Object r) throws IOException {
+	private static void writeBlock(PathBlock pb, Writer w, Object r, Matcher matcher) throws IOException {
 		
 		if (pb.controlBlock != null)
-			writeBlock(pb.controlBlock, w, r);
+			writeBlock(pb.controlBlock, w, r, matcher);
 	}
-	private static void writeBlock(ControlBlock cb, Writer w, Object r) throws IOException {
+	private static void writeBlock(ControlBlock cb, Writer w, Object r, Matcher matcher) throws IOException {
 		
 		
 		// For this control block, iterate through all the values and their ops
@@ -53,8 +58,7 @@ public class BlockProcessor {
 		}
 		
 //		paths.forEach(p->System.out.println(Arrays.toString(p.aliases)));
-		
-		
+
 		
 		// The whole control block must be repeated in case there are multiple value path...
 		// Here we must find which combination of values must be shown simultaneously
@@ -86,25 +90,35 @@ public class BlockProcessor {
 			// In case of collisions, check compatibility
 			// This means that each alias must have the same value (must be the same object)
 			Map<String,Object> aliasObjects = new HashMap<String,Object>();
-			boolean incompatible = mm.stream().anyMatch(p->!p.canAddAliasObjectToMap(aliasObjects));
+			boolean incompatible = mm.stream().anyMatch(p->!canAddAliasObjectToMap(aliasObjects, p, matcher));
 		
 			if (!incompatible) {
 				for (Block b : cb.blocks) {
 					
 					if (b.isText())
-						writeBlock((TextBlock)b, w, r);
+						writeBlock((TextBlock)b, w, r, matcher);
 					else if (b.isValue())
-						writeBlock((ValueBlock)b, w, mm);
+						writeBlock((ValueBlock)b, w, mm, matcher);
 					else if (b.isControl())
-						writeBlock((ControlBlock)b, w, r);
+						writeBlock((ControlBlock)b, w, r, matcher);
 					else
 						throw new IllegalStateException("To be implemented"); // FIXME
 				}
 			}
 		}
 	}
-	private static void writeBlock(ValueBlock vb, Writer w, List<Path> paths) throws IOException {
-		
+	private static boolean canAddAliasObjectToMap(Map<String, Object> aliasObjects, Path p, Matcher matcher) {
+		for (int i = 0; i < p.aliases.length; i++) {
+			if (p.aliases[i] != null) {
+				Object newObj = p.objects[i];
+				Object previousObj = aliasObjects.put(p.aliases[i], newObj);
+				if (previousObj != null && !matcher.isSameObject(newObj, previousObj))
+					return false;
+			}
+		}
+		return true;
+	}
+	private static void writeBlock(ValueBlock vb, Writer w, List<Path> paths, Matcher matcher) throws IOException {
 		// Current value path
 		Path current = vb.getPath();
 		
@@ -122,17 +136,13 @@ public class BlockProcessor {
 			if (vb.call == null)
 				w.append(o.toString());
 			else // TODO called path must match actual object class or interface
-				writeBlock(vb.call.getBlockToCall(), w, o);
+				writeBlock(vb.call.getBlockToCall(), w, o, matcher);
 		} else if (!found)
 			throw new IllegalStateException("Path not found for current value!"); // FIXME
 	}
-	private static void writeBlock(TextBlock tb, Writer w, Object r) throws IOException {
+	private static void writeBlock(TextBlock tb, Writer w, Object r, Matcher matcher) throws IOException {
 		w.append(tb.text);
 	}
-//	private static void writeBlock(OperationBlock ob, Writer w, Object r) {
-//		
-//	}
-	
 	public static List<Path> computeValues(ValueBlock vb, Object obj) {
 		// Init result list
 		final List<Path> toProcess = new ArrayList<Path>();
@@ -142,7 +152,7 @@ public class BlockProcessor {
 		
 		// Init processing
 		if (obj instanceof Collection)
-			((Collection) obj).forEach(o->toProcess.add(new ValuePath(vb.argName, vb.aliasName, o)));
+			((Collection<?>) obj).forEach(o->toProcess.add(new ValuePath(vb.argName, vb.aliasName, o)));
 		else if (obj != null)
 			toProcess.add(new ValuePath(vb.argName, vb.aliasName, obj));
 		
@@ -156,7 +166,7 @@ public class BlockProcessor {
 	public static Path extractObject(OperationBlock ob, Path p) {
 		Object x = null;
 		Object o = p.getObject();
-		Class c = o.getClass();
+		Class<?> c = o.getClass();
 
 		try {
 			try {

@@ -1,32 +1,24 @@
 TODO
 
+Add logging
+- Add debug info in complex process handling to help out users
+
+Add error position in errors
+
+Struct states should be ordered, not because it is necessary but to ease comparison between versions.
+
 Implement {before ALIAS}, {between ALIAS}, {after ALIAS}, {empty ALIAS}
 
 Implement {begin ALIAS |"|",|");}
 
 
-
-Calling paths...there are many options here!
-- Absolute always has priority over relative
-- All aliases are local except when used inside the call block.
-
-Caller can be relative or absolute.
-- If the call is absolute then we check for an exact absolute match
-
-- If the call is relative, then we add the parent class chain (not the parent alias)
-.../Z = W/X/Y/Z making it an absolute chain
-
-Destination can be relative or absolute.
+INTERRESTINGLY
+- Some use case of using jYATLon inside itself:
+	- To extract and dump the Struct during testing
+	- To generate the Struct class
+	- To generate the Root interface...
 
 
-
-Caller may use alias.
-- In that case, each aliases MUST be present in the destination.
-
-
-Destination may have alias.
-- Aliases will be used has a preferred choice but ARE NOT mandatory.
-- The object ancestor will be matched to the aliases.
 
 === String ===
 	$ is a String (hence we have {call String $})
