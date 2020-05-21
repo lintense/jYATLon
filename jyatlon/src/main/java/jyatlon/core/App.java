@@ -6,61 +6,70 @@ package jyatlon.core;
 //https://tomassetti.me/antlr-mega-tutorial/ 
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.StringWriter;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
-import jyatlon.core.Block.PathBlock;
 import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
 
 public class App { // Rename to YATL
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
-    	String test = "=$=\n{begin X}Hello {begin Y}Hello {{$.toString:X.toString:X}}{{$:Y}}!{end Y}!{end X}\n";
-    	
-    	
-		UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream((test.getBytes())));
-		YATLLexer lexer = new YATLLexer(input);
-        lexer.setTokenFactory(new CommonTokenFactory(true));
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        YATLParser parser = new YATLParser(tokens);
-        ParseTree tree = parser.template(); // begin parsing at rule 'r'
-//        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
-        
-        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class);
-        ParseTreeWalker walker = new ParseTreeWalker();
-        walker.walk(myListener, tree);
-        Struct struct = myListener.getStruct();
-        
-        Template t = (Template)struct;
-        
-        Block.PathBlock pb = getBlock(test, t);
-        StringWriter sw = new StringWriter();
-        BlockProcessor.merge(pb, sw, "World");
-        System.out.println(sw.toString());
-        
-//        t.test(t);
-	}
+//    	String temp = "{begin X}{{$:X}}{{call .../String $.toString}}{end X}\n=== String ===\n1{{call .../String $}}\n=== String/String ===\n2\n=== .../String ===\n3";
+    	String temp = "{{call .../String/String:Y $}}\n=== .../String/String:X ===\n=== .../String:Y ===\n1";
+    	StringWriter w = new StringWriter();
+    	YATL template = YATL.fromString(temp);
+    	template.merge("test", w);
+		System.out.println(w.toString());
+    }
 
-    static String process(String templateText, Object root) {
-    	Template t = getTemplate(templateText);
-    	BlockBuilder bb = new BlockBuilder(templateText);
-    	Block.PathBlock pb = bb.parseTemplate(t);
-    	StringWriter sw = new StringWriter();
-    	BlockProcessor.merge(pb, sw, root);
-    	return sw.toString();
-    }
+//	private void obsolete()
+//	{
+//		String test = "=$=\n{begin X}Hello {begin Y}Hello {{$.toString:X.toString:X}}{{$:Y}}!{end Y}!{end X}\n";
+//
+//		UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream((test.getBytes())));
+//		YATLLexer lexer = new YATLLexer(input);
+//        lexer.setTokenFactory(new CommonTokenFactory(true));
+//        CommonTokenStream tokens = new CommonTokenStream(lexer);
+//        YATLParser parser = new YATLParser(tokens);
+//        ParseTree tree = parser.template(); // begin parsing at rule 'r'
+////        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+//        
+//        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class);
+//        ParseTreeWalker walker = new ParseTreeWalker();
+//        walker.walk(myListener, tree);
+//        Struct struct = myListener.getStruct();
+//        
+//        Template t = (Template)struct;
+//        
+//        Block.PathBlock pb = getBlock(test, t);
+//        StringWriter sw = new StringWriter();
+//        BlockProcessor.merge(pb, sw, "World");
+//        System.out.println(sw.toString());
+//        
+////        t.test(t);
+//	}
+
+//    static String process(String templateText, Object root) {
+//    	Template t = getTemplate(templateText);
+//    	BlockBuilder bb = new BlockBuilder(templateText);
+//    	Block.PathBlock pb = bb.parseTemplate(t);
+//    	StringWriter sw = new StringWriter();
+//    	BlockProcessor.merge(pb, sw, root);
+//    	return sw.toString();
+//    }
     
     
-    static Block.PathBlock getBlock(String templateText, Template t) {
-    	BlockBuilder bb = new BlockBuilder(templateText);
-    	return bb.parseTemplate(t);
-    }
+//    static Block.PathBlock getBlock(String templateText, Template t) {
+//    	BlockBuilder bb = new BlockBuilder(templateText);
+//    	return bb.parseTemplate(t);
+//    }
     	
     static Template getTemplate(String template) {
     	String actualTemplate = "=$=\n" + template + "\n";

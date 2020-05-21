@@ -104,13 +104,17 @@ argExp
 	;
 
 pathExp
-	: anyPathOp? pathName (PATHSEP pathName)*
+	: anyPathOp? pathArg (PATHSEP pathArg)*
 	;
 
 anyPathOp
 	: ANYPATH PATHSEP
 	;
 
+pathArg
+	: pathName (COLON aliasName)?
+	;
+	
 pathName
 	: NAME
 	;

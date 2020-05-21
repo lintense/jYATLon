@@ -292,6 +292,18 @@ public class YATLBaseListener implements YATLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterPathArg(YATLParser.PathArgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPathArg(YATLParser.PathArgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterPathName(YATLParser.PathNameContext ctx) { }
 	/**
 	 * {@inheritDoc}

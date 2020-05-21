@@ -2,7 +2,6 @@ package jyatlon.core;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
@@ -51,6 +50,15 @@ public class Path {
 				Stream.of(Arrays.asList(this.objects), Arrays.asList(obj)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new Object[this.objects.length + 1])
 			);
 	}
+	public Path add(Path p) {
+		return new Path(
+				Stream.of(Arrays.asList(this.classes), Arrays.asList(p.classes)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.classes.length + p.classes.length]),
+				Stream.of(Arrays.asList(this.aliases), Arrays.asList(p.aliases)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.aliases.length + p.aliases.length]),
+				Stream.of(Arrays.asList(this.objects), Arrays.asList(p.objects)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new Object[this.objects.length + p.objects.length])
+			);
+	}
+	
+	
 	public int compatibility(List<String> path, boolean isAbsolute) {
 		// FIXME - Add path Alias functionality
 		int i1 = classes.length;
@@ -68,6 +76,9 @@ public class Path {
 	}
 	public Object getObject() {
 		return objects[objects.length - 1];
+	}
+	public String getAlias() {
+		return aliases[aliases.length - 1];
 	}
 	public Object getValueForName(String valueArg) {
 		// Aliases have precedence over classes because we can choose them!
@@ -111,14 +122,7 @@ public class Path {
 		return true;
 	}
 	
-	public static class CallPath extends Path {
 
-		public CallPath(String pathName, String pathAlias, Object obj) {
-			super(pathName, pathAlias, obj);
-			// TODO Auto-generated constructor stub
-		}
-		
-	}
 	public static class ValuePath extends Path {
 
 		public ValuePath(String pathName, String pathAlias, Object obj) {

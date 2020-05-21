@@ -149,6 +149,12 @@ public interface YATLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAnyPathOp(YATLParser.AnyPathOpContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link YATLParser#pathArg}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPathArg(YATLParser.PathArgContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link YATLParser#pathName}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

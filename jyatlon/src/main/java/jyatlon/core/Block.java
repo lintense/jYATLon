@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import jyatlon.core.Path.CallPath;
 import jyatlon.core.Path.ValuePath;
 
 /**
@@ -49,12 +49,12 @@ public abstract class Block {
 		ControlOperator end;
 //		List<ControlBlock> subControls;
 		
-		public ControlBlock(PathBlock parent, String aliasName) {
+		public ControlBlock(PathBlock parent) {
 			super();
 //			this.firstBlockIndex = 0;
 //			this.lastBlockIndex = 0;
 			this.parent = parent;
-			this.aliasName = aliasName;
+			this.aliasName = null;
 			this.begin = null;
 			this.end = null;
 //			this.blocks = null;
@@ -86,7 +86,7 @@ public abstract class Block {
 		}
 		List<ValueBlock> getValues(){
 			return blocks.stream().filter(b->b.isValue()).map(b->(ValueBlock)b).collect(Collectors.toList());
-		}
+		}		
 		boolean isSectionBlock() {
 			return begin == null;
 		}
@@ -98,7 +98,7 @@ public abstract class Block {
 		final boolean isEndOfBlock;
 		final String aliasName;
 		final int operation;
-		final List<Block> blocks = new ArrayList();
+		final List<Block> blocks = new ArrayList<Block>();
 		
 		public ControlOperator(boolean isEndOfBlock, String aliasName, int operation) {
 			super();
@@ -113,11 +113,11 @@ public abstract class Block {
 	}
 	public static class PathBlock extends Block {
 		final String pathname;
-		final CallPath path;
+		final CallBlock path;
 		List<Block> blocks;
 		ControlBlock controlBlock;
 		
-		public PathBlock(String pathname, CallPath path, List<Block> blocks) {
+		public PathBlock(String pathname, CallBlock path, List<Block> blocks) {
 			super();
 			this.pathname = pathname;
 			this.path = path;
@@ -125,6 +125,9 @@ public abstract class Block {
 		}
 		public void init(ControlBlock cb) {
 			this.controlBlock = cb;
+		}
+		List<ValueBlock> getValues(){
+			return blocks.stream().filter(b->b.isValue()).map(b->(ValueBlock)b).collect(Collectors.toList());
 		}
 	}
 	public static class TextBlock extends Block {
@@ -143,12 +146,14 @@ public abstract class Block {
 	public static class ValueBlock extends Block {
 		final String argName;
 		final String aliasName;
+		final CallBlock call;
 		final List<OperationBlock> ops = new ArrayList<OperationBlock>();
 		
-		public ValueBlock(String argName, String aliasName) {
+		public ValueBlock(String argName, String aliasName, CallBlock call) {
 			super();
 			this.argName = argName;
 			this.aliasName = aliasName;
+			this.call = call;
 		}
 		boolean isValue() {
 			return true;
@@ -180,6 +185,37 @@ public abstract class Block {
 		}
 		
 	}
-	
+	public static class CallBlock {
+
+		public final Path path;
+		public final String name;
+		public final boolean isRelative;
+		private PathBlock toCall;
+		
+		public CallBlock(Path path, boolean isRelative) {
+			super();
+			this.path = path;
+			this.isRelative = isRelative;
+			this.name = computeName();
+		}
+		private String computeName() {
+			String result = "";
+			String finalAlias = path.getAlias(); // Only final alias is part of the name
+			for (int i = 0; i < path.classes.length; i++)
+				result += "/" + path.classes[i];
+			return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
+			// TODO add alias to rep
+		}
+		public void setBlockToCall(PathBlock toCall) {
+			this.toCall = toCall;
+		}
+		public PathBlock getBlockToCall() {
+			return toCall;
+		}
+		public boolean isValidForValue() {
+			// Only the last alias is allowed in a value block call block
+			return path.aliases.length > 0 && IntStream.range(0, path.aliases.length - 1).allMatch(a->path.aliases[a] == null);
+		}
+	}
 	
 }

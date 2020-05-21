@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Map;
 
 import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -13,6 +14,7 @@ import org.antlr.v4.runtime.UnbufferedCharStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import jyatlon.core.Block.PathBlock;
 import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
@@ -21,6 +23,7 @@ public class YATL {
 	private final String content;
 //	private final Template template;
 	private final Block.PathBlock mainBlock;
+	private final Map<String,PathBlock> pathBlocks;
 	
 	public static YATL fromString(String templateContent) throws IOException {
 		return new YATL(templateContent);
@@ -37,8 +40,9 @@ public class YATL {
 	private YATL(String templateCcontent) {
 		this.content = "=$=\n" + templateCcontent + "\n";
 		Template t = parseTemplate();
-    	BlockBuilder bb = new BlockBuilder(content);
-    	mainBlock = bb.parseTemplate(t);
+//    	BlockBuilder bb = new BlockBuilder(content);
+    	pathBlocks = BlockBuilder.parseTemplate(content, t);
+    	mainBlock = pathBlocks.get(BlockBuilder.ROOT);
 	}
 	public void merge(Object root, Writer w) {
 		BlockProcessor.merge(mainBlock, w, root);

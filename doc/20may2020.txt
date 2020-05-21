@@ -1,0 +1,58 @@
+TODO
+
+Implement {before ALIAS}, {between ALIAS}, {after ALIAS}, {empty ALIAS}
+
+Implement {begin ALIAS |"|",|");}
+
+
+
+Calling paths...there are many options here!
+- Absolute always has priority over relative
+- All aliases are local except when used inside the call block.
+
+Caller can be relative or absolute.
+- If the call is absolute then we check for an exact absolute match
+
+- If the call is relative, then we add the parent class chain (not the parent alias)
+.../Z = W/X/Y/Z making it an absolute chain
+
+Destination can be relative or absolute.
+
+
+
+Caller may use alias.
+- In that case, each aliases MUST be present in the destination.
+
+
+Destination may have alias.
+- Aliases will be used has a preferred choice but ARE NOT mandatory.
+- The object ancestor will be matched to the aliases.
+
+=== String ===
+	$ is a String (hence we have {call String $})
+	call String is used unambiguously
+=== String/String ===
+	call String/String is used unambiguously
+
+How to validate the destinations?
+
+{begin X}{{$:X}}{{call .../String $.toString}}{end X}\n=== String ===\n1{{call .../String $}}\n=== String/String ===\n2\n=== .../String ===\n3"
+
+{{$}}\n=== .../String ===\n=== .../String ===
+
+    	String templateContent = "{begin X}{{$:X}}{{call .../String $.toString}}{end X}\n=== String ===\n1{{call .../String $}}\n=== String/String ===\n2\n=== .../String ===\n3";
+
+ADD TO TESTS:
+		
+"{{$}}\n=== .../String ===\n=== .../String ===";
+Duplicated path name: === String ===
+
+"{{call String:Y $}}\n=== String:X ===\n=== String:Y ===\n1"
+1
+
+"{{call String $}}\n=== String:X ===\n=== String:Y ===\n1"
+java.lang.IllegalStateException: Many destination found for call String
+
+"{{call .../String/String:Y $}}\n=== .../String/String:X ===\n=== .../String:Y ===\n1"
+1
+

@@ -10,10 +10,10 @@
 
 ### Why YATL?
 Most current template languages are procedural, so they look like code, not like template... So they are (at times) hard to understand and need to be debugged, just like code!
-What about a new *declarative* templating language build from the ground up to look just like a *real* template language?
+What about a new *declarative* templating language build from the ground up to look just like a *real* template?
 Doing so would provide the following benefits:
 
-- **Clarity:** No `${#if#elseif#endif}` gibberish.
+- **Clarity:** No more `${#if#elseif#endif}` gibberish.
 - **Java 8 compatibility:** To accomodate existing projects.
 - **Light & simple:** Easy to understand, easy to adapt!
 - **Performance**... Whenever possible!
@@ -112,7 +112,7 @@ x = null; // Text to appear if the Collection is empty
 
 ##### Short notation
 - When the `before, between, after` sequences are short, you may use an alternative notation such as `{begin ALIAS |"|",|");}` for clarity. 
-- The first character found after the [alias](#alias) **MUST** be repeated exactly 3 times in order to be correctly interpreted as the separator. So you can use any single character that you want for that nmatter.
+- The first character found after the [alias](#alias) **MUST** be repeated exactly 3 times in order to be correctly interpreted as the separator. So you can use any single character that you want for that matter.
 - Remember that all control blocks are single lined.
 
 ##### Block imbrication

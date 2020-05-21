@@ -238,6 +238,16 @@ public interface YATLListener extends ParseTreeListener {
 	 */
 	void exitAnyPathOp(YATLParser.AnyPathOpContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link YATLParser#pathArg}.
+	 * @param ctx the parse tree
+	 */
+	void enterPathArg(YATLParser.PathArgContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YATLParser#pathArg}.
+	 * @param ctx the parse tree
+	 */
+	void exitPathArg(YATLParser.PathArgContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link YATLParser#pathName}.
 	 * @param ctx the parse tree
 	 */

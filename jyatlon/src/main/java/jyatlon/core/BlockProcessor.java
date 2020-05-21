@@ -37,7 +37,8 @@ public class BlockProcessor {
 	}
 	private static void writeBlock(PathBlock pb, Writer w, Object r) throws IOException {
 		
-		writeBlock(pb.controlBlock, w, r);
+		if (pb.controlBlock != null)
+			writeBlock(pb.controlBlock, w, r);
 	}
 	private static void writeBlock(ControlBlock cb, Writer w, Object r) throws IOException {
 		
@@ -109,14 +110,20 @@ public class BlockProcessor {
 		
 		// Find which path element is matching the current value
 		boolean found = false;
+		Object o = null;
 		FIND_PATH: for (Path path : paths) {
-			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) {
+			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) { // FIXME use stream
 				found = true;
-				w.append(path.getObject().toString());
+				o = path.getObject();
 				break FIND_PATH;
 			}
 		}
-		if (!found)
+		if (found && o != null) {
+			if (vb.call == null)
+				w.append(o.toString());
+			else // TODO called path must match actual object class or interface
+				writeBlock(vb.call.getBlockToCall(), w, o);
+		} else if (!found)
 			throw new IllegalStateException("Path not found for current value!"); // FIXME
 	}
 	private static void writeBlock(TextBlock tb, Writer w, Object r) throws IOException {

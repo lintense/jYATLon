@@ -34,7 +34,6 @@ public class Utils {
 	public static String pathToString(java.nio.file.Path path) throws IOException {
 		return new String(Files.readAllBytes(path));
 	}
-
 	
 //	public static InputStream urlToStream() throws FileNotFoundException {
 //		File f = urlToFile(url);
