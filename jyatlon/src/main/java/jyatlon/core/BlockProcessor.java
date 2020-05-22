@@ -65,10 +65,10 @@ public class BlockProcessor {
 		if (s == null)
 			flushStrings(outputs, w); // Alias was never used, so ignore this control block.
 		else {
-			if (!s.isDefined || (s.isDefined && s.isEmpty)) // There was an attempt to write the alias so consider it as empty.
+			if (!s.isDefined || (s.isDefined && s.isEmpty)) { // There was an attempt to write the alias so consider it as empty.
 				if (cb.empty != null)
 					flushStrings(writeBlock(cb.empty, r, matcher, statuses), w);
-			else if (s.isDefined && s.isCollection) { // This is a collection, so dress it up a bit.
+			} else if (s.isDefined && s.isCollection) { // This is a collection, so dress it up a bit.
 				if (cb.before != null)
 					flushStrings(writeBlock(cb.before, r, matcher, statuses), w);
 				boolean first = true;

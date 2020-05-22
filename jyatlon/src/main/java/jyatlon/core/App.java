@@ -27,7 +27,9 @@ public class App { // Rename to YATL
     	
 //    	String temp = "{begin X}{{X}}{{$:X}}{end X}";
     	
-    	String temp = "{begin X}{{X}}{empty X}{{X}}{end X}";
+//    	String temp = "{begin X}{{X}}{empty X}{{X}}{end X}";
+    	
+    	String temp = "{begin ALIAS}Hello {{$:ALIAS}}!{end ALIAS}";
     	StringWriter w = new StringWriter();
     	YATL template = YATL.fromString(temp);
     	template.merge("test", w);
