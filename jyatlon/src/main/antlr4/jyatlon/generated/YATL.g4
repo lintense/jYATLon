@@ -146,10 +146,11 @@ BEGIN			: 'begin';
 BEFORE			: 'before';
 BETWEEN			: 'between';
 AFTER			: 'after';
+EMPTY			: 'empty';
 END				: 'end';
 CALL			: 'call';
 IF				: 'if';
-CONTROL			:  LCURL ( BEGIN | BEFORE | BETWEEN | AFTER | END ) ;
+CONTROL			:  LCURL ( BEGIN | BEFORE | BETWEEN | AFTER | EMPTY | END ) ;
 
 ROOT			: '$';
 

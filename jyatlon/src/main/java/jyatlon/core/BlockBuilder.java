@@ -92,7 +92,7 @@ public class BlockBuilder {
 			}
 			
 			if (toCall == null)
-				throw new IllegalStateException("Cannot find destination for " + vb.call.path.getPathName());
+				throw new IllegalStateException("Cannot find destination for " + vb.call.name);
 			// TODO Add detection for possible infinite loop (warn user)
 			
 			vb.call.setBlockToCall(toCall);
@@ -241,11 +241,11 @@ public class BlockBuilder {
 
 		return new CallBlock(parsePathArg(path.pathArg), path.anyPathOp != null);
 	}
-	private static Path parsePathArg(List<PathArg> pathArgs) {
-		Path p = null;
+	private static ValuePath parsePathArg(List<PathArg> pathArgs) {
+		ValuePath p = null;
 		for (PathArg pathArg : pathArgs) {
 			p = p == null 
-					? (new Path(pathArg.pathName, pathArg.aliasName, null)) 
+					? (new ValuePath(pathArg.pathName, pathArg.aliasName, null)) 
 					: p.add(pathArg.pathName, pathArg.aliasName, null);
 		}
 		return p;
@@ -286,7 +286,7 @@ public class BlockBuilder {
 						if (lineExp.value.valueExp != null)
 							result.add(parseValue(lineExp.value));
 						else
-							throw new IllegalStateException("To be implemented"); // FIXME
+							throw new IllegalStateException("To be implemented"); // FIXME To be implemented
 					}
 				} else {
 					throw new IllegalStateException("Not yet implemented line exp type");
@@ -305,35 +305,57 @@ public class BlockBuilder {
 		return result;
 	}
 	private static ControlBlock extractControlBlock(ControlBlock currentBlock, Iterator<Block> i) {
+		ControlOperator currentControl = currentBlock.begin;
 		Map<Integer,ControlOperator> activeControl = new HashMap<Integer,ControlOperator>();
+		activeControl.put(ControlBlock.CONTROL_BEGIN, currentBlock.begin);
 		while (i.hasNext()) {
 			Block b = i.next();
 			if (b.isControlOperator()) {
 				ControlOperator co = (ControlOperator)b;
 				boolean sameAlias = co.aliasName.equals(currentBlock.aliasName);
 				if (!sameAlias && co.operation == ControlBlock.CONTROL_BEGIN) {
-					currentBlock.addBlock(extractControlBlock(new ControlBlock(currentBlock, co), i)); // Extract sub block
+					currentControl.addBlock(extractControlBlock(new ControlBlock(currentBlock, co), i)); // Extract sub block
 				} else if (co.operation == ControlBlock.CONTROL_BEGIN)
 					throw new IllegalStateException("Duplicated {begin:" + co.aliasName + "}") ;
 				else if (sameAlias && co.operation == ControlBlock.CONTROL_END) {
-					activeControl.put(co.operation, co);
-					return currentBlock.init(activeControl);
+					activeControl.put(co.operation, currentControl = co);
+					return validateControlBlock(currentBlock.init(activeControl));
 				} else if (sameAlias)
-					activeControl.put(co.operation, co);
+					activeControl.put(co.operation, currentControl = co);
 				else
 					throw new IllegalStateException("Missing {begin:" + co.aliasName + "}") ;
-			} else if (b.isValue() && activeControl.isEmpty())
-				currentBlock.addBlock(b);
-			else if (b.isValue())
-				throw new IllegalStateException("Value not into {begin:" + currentBlock.aliasName + "}") ;
-			else if (b.isText())
-				currentBlock.addBlock(b);
-			else
-				throw new IllegalStateException("Cannot insert " + b.getClass().getSimpleName() + " into ControlBlock");
+			} else 
+				currentControl.addBlock(b);
+//			else if (b.isValue())
+//				throw new IllegalStateException("Value not into {begin:" + currentBlock.aliasName + "}") ;
+//			else if (b.isText())
+//				currentBlock.addBlock(b);
+//			else
+//				throw new IllegalStateException("Cannot insert " + b.getClass().getSimpleName() + " into ControlBlock");
 		}
 		if (currentBlock.isSectionBlock())
 			return currentBlock;
 		throw new IllegalStateException("Missing {begin:" + currentBlock.aliasName + "}");
+	}
+	private static ControlBlock validateControlBlock(ControlBlock cb) {
+		// My alias MUST be defined at least once
+		// Also the defining block should/could be flagged to be processed first!
+		
+		
+		// Validate that all the control operators (except begin) do not reference the control alias.
+		// FIXME error message must be clearer
+		if (cb.before != null && cb.before.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
+			throw new IllegalStateException("Invalid reference in {before " + cb.aliasName + "}");
+		if (cb.between != null && cb.between.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
+			throw new IllegalStateException("Invalid reference in {between " + cb.aliasName + "}");
+		if (cb.after != null && cb.after.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
+			throw new IllegalStateException("Invalid reference in {after " + cb.aliasName + "}");
+		if (cb.empty != null && cb.empty.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
+			throw new IllegalStateException("Invalid reference in {empty " + cb.aliasName + "}");
+
+		// TODO Validate all aliases used everywhere are defined in block parents... 
+	
+		return cb;
 	}
 	private static ValueBlock parseValue(Value value) {
 		ValueBlock result = new ValueBlock(value.valueExp.valueArg, value.valueExp.aliasName, parseCallExp(value.callExp));

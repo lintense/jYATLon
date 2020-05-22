@@ -1,24 +1,60 @@
 TODO
 
+- What happens when {{$:alias}} {{X:alias}} {{Y:alias}} the same alias is defined in many places?
+
+
+HIGH: Implement {before ALIAS}, {between ALIAS}, {after ALIAS}, {empty ALIAS}
+- Must find a way to know in which order to evaluate the ValueBlock during BlockBuilder phase
+
+
+HIGH: show alias value {{ALIAS}}
+
+QUESTION: What happens when there is no associated alias to a block?
+
 Add logging
 - Add debug info in complex process handling to help out users
+- No dependency
+
 
 Add error position in errors
+- Create an error class (to differentiate from IllegalStateException)
 
-Struct states should be ordered, not because it is necessary but to ease comparison between versions.
+LOW: Struct states should be ordered, not because it is necessary but to ease comparison between versions.
+LOW: Implement {begin ALIAS |"|",|");}
 
-Implement {before ALIAS}, {between ALIAS}, {after ALIAS}, {empty ALIAS}
+Build a tiny jar file
 
-Implement {begin ALIAS |"|",|");}
+Deploy in the cloud!
+https://blog.travis-ci.com/2017-03-30-deploy-maven-travis-ci-packagecloud/
 
 
-INTERRESTINGLY
+INTERESTINGLY...
 - Some use case of using jYATLon inside itself:
 	- To extract and dump the Struct during testing
 	- To generate the Struct class
 	- To generate the Root interface...
 
+-=-=-
+Have a test case with the Alias asked before it is actualy defined
 
+{begin X}
+{{X}}
+{{$:X}}
+{end X}
+
+
+Integer[][] test = {{1,2},{2},{}};
+
+{begin A}a{begin B}
+b{{$:A.B}}
+
+
+
+	
+	
+	
+	
+-=-=-	
 
 === String ===
 	$ is a String (hence we have {call String $})
@@ -48,3 +84,5 @@ java.lang.IllegalStateException: Many destination found for call String
 "{{call .../String/String:Y $}}\n=== .../String/String:X ===\n=== .../String:Y ===\n1"
 1
 
+"{begin X}{{X}}{empty X}{{X}}{end X}";
+java.lang.IllegalStateException: Invalid reference in {empty X}

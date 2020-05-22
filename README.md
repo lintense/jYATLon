@@ -59,23 +59,23 @@ Root, Alias                 // Well... those are the aliases!
 - In any case, equality is always performed by using the *Java* `==` operator.
 - Any `null` object or empty `String` or `Collection` are considered *false* `{{if $ 'Root is not null!'}}`.
 
-##### Collection
-- In case the [value](#value) is a `Collection` it can be usefull to know about the *index of* one element or the *size of* the `Collection` itself.
-- The `indexOf` function returns the index of the current [value](#value) starting by `1`: `{{indexOf($.val)}}`.
- - The `sizeOf` function returns the number of [values](#value) that are visible for the {{alias}}(#alias): `{{sizeOf($.val:ALIAS)}}`.
-- `Collection` functions may be used inside a condition: `{{if indexOf($.val) == 1 'First:'}}`.
-
 #### <a id="alias"></a>Alias
-- You may assign an alias to any part of a [value](#value) expression. For exemple `{{$:ROOT.toString:ROOT_AGAIN.substring(1,4):PART_OF_ROOT}}`.
+- You may assign an alias to any part of a [value](#value) expression. For exemple `{{$:ALIAS_1.toString:ALIAS_2.substring(1,4):ALIAS_3}}`.
 - Aliases **MUST** start with a letter or an underscore but they can also contain numbers: `[_A-Za-z][_A-Za-z0-9]*`.
 - If any part of a [value](#value) expression is `null` or empty `""` then no text will be inserted. If you intend to provide a default text in those cases, then you **MUST** provide the [value](#value) with an alias and put it into a [block](#block).
 - Any alias outside of a [block](#block) has no effect.
 - For clarity, it is possible to prepare an alias at the begining of any [block](#block) `{prepare $.valueExp:ALIAS}`. Prepared alias can be easily inserted later `{{ALIAS}}` in the block.
 
+##### Collection
+- In case the [value](#value) is a `Collection` it can be usefull to know about the *index of* one element or the *size of* the `Collection` itself.
+- The `indexOf` function returns the index of the current alias [value](#value) starting by `1`: `{{indexOf($.val:ALIAS)}}`.
+ - The `sizeOf` function returns the number of visible alias [values](#value): `{{sizeOf($.val:ALIAS)}}`.
+- `Collection` functions may be used inside a condition: `{{if indexOf(ALIAS) == 1 'First:'}}`.
+
 #### <a id="block"></a>Block
 - A block is delimited by controls that are enclosed into **single braces** `{` `}`.
 - A block is always associated to a single [alias](#alias). Its role is to control the visibilty of the text that surrounds the [value](#value) associated with its [alias](#alias).
-- A block always begins by `{begin ALIAS}` and always ends by `{end ALIAS}`.
+- A block always begins with `{begin ALIAS}` and always ends with `{end ALIAS}`.
 ```javascript
 {begin ALIAS} // The most simple block!
     {{$.val:ALIAS}}
@@ -111,8 +111,8 @@ x = null; // Text to appear if the Collection is empty
 - The previous example (if you remove the java comments) would return `x = List("a","b");` or `x = null;` in case there is nothing to display.
 
 ##### Short notation
-- When the `before, between, after` sequences are short, you may use an alternative notation such as `{begin ALIAS |"|",|");}` for clarity. 
-- The first character found after the [alias](#alias) **MUST** be repeated exactly 3 times in order to be correctly interpreted as the separator. So you can use any single character that you want for that matter.
+- When the `before, between, after, empty` sequences are short, you may use an alternative notation such as `{begin ALIAS |("|","|")|()}` for clarity.
+- The first character found after the [alias](#alias) **MUST** be repeated exactly 4 times in order to be correctly interpreted as the separator. So you can use any single character that you want for that matter.
 - Remember that all control blocks are single lined.
 
 ##### Block imbrication

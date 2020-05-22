@@ -1,37 +1,33 @@
 package jyatlon.core;
 
-import java.io.File;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import jyatlon.generated.YATLParser;
-
 /**
  * @author linte
  * SRP: Hide the implementation of the path mechanism
  */
-public class Path {
+public class ValuePath {
 
-	private static final String SEPARATOR = File.separator;
-	private static final String ANYPATH = YATLParser.VOCABULARY.getLiteralName(YATLParser.ANYPATH).replace("'", "");
+//	private static final String SEPARATOR = File.separator;
+//	private static final String X = Utils.unquote(YATLParser.VOCABULARY.getLiteralName(YATLParser.PATHSEP));
+//	private static final String ANYPATH = Utils.unquote(YATLParser.VOCABULARY.getLiteralName(YATLParser.ANYPATH));
 	
 	// This is a naive implementation
 	public final String[] aliases;
 	public final String[] classes;
 	public final Object[] objects;
 	
-	public Path(String pathName, String pathAlias, Object obj) {
+	public ValuePath(String pathName, String pathAlias, Object obj) {
 		this.aliases = new String[] {pathAlias};
 		this.classes = new String[] {pathName};
 		this.objects = new Object[] {obj};
 	}
-	protected Path(String[] classes, String[] aliases, Object[] objects) {
+	protected ValuePath(String[] classes, String[] aliases, Object[] objects) {
 		assert classes.length == aliases.length && aliases.length == objects.length;
 		// Classes and objects arrays must match
 		assert IntStream.range(1, objects.length).filter(i -> objects[i].getClass().getSimpleName().equals(classes[i])).count() == objects.length - 1;
@@ -42,37 +38,20 @@ public class Path {
 		this.classes = classes;
 		this.objects = objects;
 	}
-	public Path add(String className, String pathAlias, Object obj) {
+	public ValuePath add(String className, String pathAlias, Object obj) {
 		assert className != null && pathAlias != null;
-		return new Path(
+		return new ValuePath(
 				Stream.of(Arrays.asList(this.classes), Arrays.asList(className)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.classes.length + 1]),
 				Stream.of(Arrays.asList(this.aliases), Arrays.asList(pathAlias)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.aliases.length + 1]),
 				Stream.of(Arrays.asList(this.objects), Arrays.asList(obj)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new Object[this.objects.length + 1])
 			);
 	}
-	public Path add(Path p) {
-		return new Path(
+	public ValuePath add(ValuePath p) {
+		return new ValuePath(
 				Stream.of(Arrays.asList(this.classes), Arrays.asList(p.classes)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.classes.length + p.classes.length]),
 				Stream.of(Arrays.asList(this.aliases), Arrays.asList(p.aliases)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.aliases.length + p.aliases.length]),
 				Stream.of(Arrays.asList(this.objects), Arrays.asList(p.objects)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new Object[this.objects.length + p.objects.length])
 			);
-	}
-	
-	
-	public int compatibility(List<String> path, boolean isAbsolute) {
-		// FIXME - Add path Alias functionality
-		int i1 = classes.length;
-		int i2 = path.size();
-		int compatibility = 0;
-		while (i1 > 0 && i2 > 0) {
-			String p1 = classes[--i1];
-			String p2 = path.get(--i2);
-			if (p1.equals(p2) || ANYPATH.equals(p2))
-				compatibility++;
-			else
-				break;
-		}
-		return compatibility;
 	}
 	public Object getObject() {
 		return objects[objects.length - 1];
@@ -80,7 +59,7 @@ public class Path {
 	public String getAlias() {
 		return aliases[aliases.length - 1];
 	}
-	public Object getValueForName(String valueArg) {
+	public Object getValueForName(String valueArg) { // TODO not used
 		// Aliases have precedence over classes because we can choose them!
 		OptionalInt opt1 = IntStream.range(0, aliases.length).filter(i -> aliases[i].equals(valueArg)).findAny();
 		if (opt1.isPresent())
@@ -91,9 +70,9 @@ public class Path {
 		
 		throw new IllegalArgumentException("The name '" + valueArg + "' does not exist in the current scope.");
 	}
-	public String getPathName() {
-		return String.join(Path.SEPARATOR, classes);
-	}
+//	public String getPathName() {
+//		return String.join(ValuePath.SEPARATOR, classes);
+//	}
 // The following is not good because duplication is allowed is the objects are the same
 //	public boolean hasDuplicatedAliases() {
 //		Set<String> alreadyFound = new HashSet<String>();
@@ -113,12 +92,12 @@ public class Path {
 
 	
 
-	public static class ValuePath extends Path {
-
-		public ValuePath(String pathName, String pathAlias, Object obj) {
-			super(pathName, pathAlias, obj);
-			// TODO Auto-generated constructor stub
-		}
-		
-	}
+//	public static class ValuePath extends Path {
+//
+//		public ValuePath(String pathName, String pathAlias, Object obj) {
+//			super(pathName, pathAlias, obj);
+//			// TODO Auto-generated constructor stub
+//		}
+//		
+//	}
 }

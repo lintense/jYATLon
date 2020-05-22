@@ -22,7 +22,12 @@ public class App { // Rename to YATL
     public static void main( String[] args ) throws IOException
     {
 //    	String temp = "{begin X}{{$:X}}{{call .../String $.toString}}{end X}\n=== String ===\n1{{call .../String $}}\n=== String/String ===\n2\n=== .../String ===\n3";
-    	String temp = "{{call .../String/String:Y $}}\n=== .../String/String:X ===\n=== .../String:Y ===\n1";
+//    	String temp = "{{call .../String/String:Y $}}\n=== .../String/String:X ===\n=== .../String:Y ===\n1";
+//    	String temp = "{{$.toString()}}\n=== .../String/String:X ===\n=== .../String:Y ===\n1";
+    	
+//    	String temp = "{begin X}{{X}}{{$:X}}{end X}";
+    	
+    	String temp = "{begin X}{{X}}{empty X}{{X}}{end X}";
     	StringWriter w = new StringWriter();
     	YATL template = YATL.fromString(temp);
     	template.merge("test", w);

@@ -148,16 +148,16 @@
 			<version>3.2.0</version>
 			<configuration>
 			  <archive>
+			  	<addMavenDescriptor>false</addMavenDescriptor>
 				<manifest>
 					<!-- Jar file entry point -->
 					<mainClass>jyatlon.core.App</mainClass>
 					<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-					
 				</manifest>
-				<addMavenDescriptor>false</addMavenDescriptor>
 			  </archive>
 			  <excludes>
 			  	<exclude>**/dev/**</exclude>
+			  	<exclude>**/maven/**</exclude>
 			  </excludes>
 			  <finalName>jYATLon-${project.version}</finalName>  
 			</configuration>
