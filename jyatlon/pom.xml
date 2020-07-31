@@ -14,14 +14,8 @@
   <dependencies>
   	<dependency>
   		<groupId>org.antlr</groupId>
-  		<artifactId>antlr4</artifactId>
+  		<artifactId>antlr4-runtime</artifactId>
   		<version>4.7.2</version>
-  		<exclusions>
-  			<exclusion>
-  				<groupId>org.antlr</groupId>
-  				<artifactId>antlr-runtime</artifactId>
-  			</exclusion>
-  		</exclusions>
   	</dependency>
   	<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 	<dependency>
@@ -142,6 +136,26 @@
 	          <target>1.8</target>
 	      </configuration>
 	    </plugin>
+	    <plugin>
+		    <groupId>org.apache.maven.plugins</groupId>
+		    <artifactId>maven-dependency-plugin</artifactId>
+		    <executions>
+		        <execution>
+		            <id>copy-dependencies</id>
+		            <phase>prepare-package</phase>
+		            <goals>
+		                <goal>copy-dependencies</goal>
+		            </goals>
+		            <configuration>
+		                <outputDirectory>${project.build.directory}/classes/lib</outputDirectory>
+		                <includeScope>compile</includeScope>
+		                <overWriteReleases>false</overWriteReleases>
+		                <overWriteSnapshots>false</overWriteSnapshots>
+		                <overWriteIfNewer>true</overWriteIfNewer>
+		            </configuration>
+		        </execution>
+		    </executions>
+		</plugin>
 	    <!-- Make this jar executable -->
 		<plugin>
 			<groupId>org.apache.maven.plugins</groupId>
@@ -151,6 +165,8 @@
 			  <archive>
 			  	<addMavenDescriptor>false</addMavenDescriptor>
 				<manifest>
+					<addClasspath>true</addClasspath>
+	                <classpathPrefix>lib/</classpathPrefix>
 					<!-- Jar file entry point -->
 					<mainClass>jyatlon.core.App</mainClass>
 					<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
