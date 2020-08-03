@@ -229,7 +229,9 @@ public class BlockProcessor {
 	}
 	// OR | AND
 	private static boolean computeTest(LogicalTestBlock test, List<ValuePath> paths, Matcher matcher) {
-		if ("||".equals(test.op)) {
+		if (test == null)
+			return true;
+		else if ("||".equals(test.op)) {
 			for (BinaryTestBlock tb : test.exp)
 				if (computeTest(tb, paths, matcher))
 					return true;

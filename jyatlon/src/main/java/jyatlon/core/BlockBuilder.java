@@ -382,12 +382,16 @@ public class BlockBuilder {
 	private static LogicalTestBlock parseLogicalTestBlock(IfExp exp) {
 		if (exp == null)
 			return null;
-		// TODO Validation: All logical ops must be equals
-//		if (exp.logicalOp.stream().distinct().limit(2).count() != 1)
-//			throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalOp, exp.from);
-		
 		List<BinaryTestBlock> ops = exp.logicalExp.binaryExp.stream().map(x -> parseBinaryTestBlock(x)).collect(Collectors.toList());
-		return new LogicalTestBlock(exp.logicalExp.from, ops, exp.logicalExp.logicalOp.get(0));
+		if (exp.logicalExp.logicalOp != null) {
+			// TODO Validation: All logical ops must be equals
+			if (exp.logicalExp.logicalOp.stream().distinct().limit(2).count() != 1)
+				throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalExp.logicalOp, exp.from);
+			return new LogicalTestBlock(exp.logicalExp.from, ops, exp.logicalExp.logicalOp.get(0));
+		} else if (ops.size() == 1)
+			return new LogicalTestBlock(exp.logicalExp.from, ops, "&&"); // default to AND
+		else
+			throw new IllegalStateException("Case not allowed by grammar");
 	}
 	private static BinaryTestBlock parseBinaryTestBlock(BinaryExp exp) {
 		List<ValueBlock> values = exp.valueExp.stream().map(x -> parseValueExp(x, null, null, x.from)).collect(Collectors.toList());
