@@ -226,7 +226,7 @@
 	  </plugins>
   </build>
   <profiles>
-    <!--  JVM configuration for running the tests -->
+    <!--  JVM configuration for running the tests JDK8 required! -->
     <profile>
        <id>surefire-java8</id>
        <activation>
@@ -241,7 +241,8 @@
                    <configuration>
                       <forkCount>1</forkCount>
        				  <reuseForks>true</reuseForks>
-                      <argLine>-ea --illegal-access=deny -Xmx2048m ${surefire.argLine}</argLine>
+					  <!-- --illegal-access=deny removed for JDK8 -->
+                      <argLine>-ea -Xmx2048m ${surefire.argLine}</argLine>
                    </configuration>
                    <executions>
 			         <execution>
