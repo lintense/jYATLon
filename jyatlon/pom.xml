@@ -240,9 +240,8 @@
                    <version>2.19.1</version>
                    <configuration>
                       <forkCount>1</forkCount>
-       				  <reuseForks>true</reuseForks>
-					  <!-- --illegal-access=deny removed for JDK8 -->
-                      <argLine>-ea -Xmx2048m ${surefire.argLine}</argLine>
+       				  <reuseForks>true</reuseForks> 
+                      <argLine>-ea -Xmx2048m ${surefire.argLine}</argLine><!-- illegal-access=deny removed for JDK8 -->
                    </configuration>
                    <executions>
 			         <execution>
