@@ -1,5 +1,6 @@
 package jyatlon.core;
 
+import java.awt.Point;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -38,11 +39,15 @@ public class YATL {
 		return new YATL(Utils.pathToString(Utils.getPath(templateFile)));
 	}
 	private YATL(String templateCcontent) {
-		this.content = "=$=\n" + templateCcontent + "\n";
-		Template t = parseTemplate();
-//    	BlockBuilder bb = new BlockBuilder(content);
-    	pathBlocks = BlockBuilder.parseTemplate(content, t);
-    	mainBlock = pathBlocks.get(BlockBuilder.ROOT);
+        try {
+			this.content = BlockBuilder.HIDDEN_HEADER + templateCcontent + "\n"; // Always at least 2 lines
+			Template t = parseTemplate();
+	    	pathBlocks = BlockBuilder.parseTemplate(content, t);
+	    	mainBlock = pathBlocks.get(BlockBuilder.ROOT);
+		} catch (BlockBuildingError e) {
+			Point p = getErrorPosition(e.pos);
+			throw new IllegalArgumentException("line " + p.y + ":" + p.x + " " + e.getMessage(), e);
+		}
 	}
 	public void merge(Object root, Writer w) {
 		BlockProcessor.merge(mainBlock, w, root);
@@ -70,10 +75,33 @@ public class YATL {
         ParseTree tree = parser.template(); // begin parsing at rule 'r'
 //        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         
-        StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class);
-        ParseTreeWalker walker = new ParseTreeWalker();
-        walker.walk(myListener, tree);
-        Struct struct = myListener.getStruct(); // java.util.EmptyStackException
-        return (Template)struct;
+        // Errors could be collected from parser.getErrorListeners()
+        // FIXME the line number returned is +1 because of the HIDDEN_HEADER
+        if (parser.getNumberOfSyntaxErrors() > 0) // Crash early and crash often for more reliable software...
+        	throw new IllegalArgumentException("Template cannot be compiled due to errors. Processing stopped!");
+        
+		StructBuilder<Struct> myListener = new StructBuilder<Struct>(Struct.class);
+		ParseTreeWalker walker = new ParseTreeWalker();
+		walker.walk(myListener, tree);
+		Struct struct = myListener.getStruct(); // java.util.EmptyStackException
+		return (Template)struct;
+
+    }
+    /**
+     * @param pos
+     * Note: Slow processing, do not use except for error handling!
+     * @return
+     */
+    private Point getErrorPosition(int pos) {
+    	String[] lines = content.split("\n");
+    	int eol = content.indexOf(lines[1])-lines[0].length(); // Always at least 2 lines
+    	int x = 0, y = 0;
+    	LOOP: for (String s : lines)
+    		if (x < pos) {
+    			y++;
+    			x+=s.length()+eol;
+    		} else 
+    			break LOOP;
+    	return new Point(x-pos+1, y);
     }
 }

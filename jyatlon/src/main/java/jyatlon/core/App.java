@@ -17,7 +17,11 @@ import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
 
-public class App { // Rename to YATL
+/**
+ * @author snadeau
+ * @obsolete Use YATL.java instead
+ */
+public class App { // FIXME Tests should point to YATL
 
     public static void main( String[] args ) throws IOException
     {

@@ -1,8 +1,8 @@
 package jyatlon.core;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -32,7 +32,7 @@ public class ValuePath {
 		// Classes and objects arrays must match
 		assert IntStream.range(1, objects.length).filter(i -> objects[i].getClass().getSimpleName().equals(classes[i])).count() == objects.length - 1;
 		// Alias names and classes names should not intersect
-		assert !Stream.of(classes).filter(c -> Set.of(aliases).contains(c)).findAny().isPresent();
+		assert !Stream.of(classes).filter(c -> new HashSet<>(Arrays.asList(aliases)).contains(c)).findAny().isPresent();
 		
 		this.aliases = aliases;
 		this.classes = classes;
@@ -59,7 +59,7 @@ public class ValuePath {
 	public String getAlias() {
 		return aliases[aliases.length - 1];
 	}
-	public Object getValueForName(String valueArg) { // TODO not used
+	private Object getValueForName(String valueArg) { // TODO not used
 		// Aliases have precedence over classes because we can choose them!
 		OptionalInt opt1 = IntStream.range(0, aliases.length).filter(i -> aliases[i].equals(valueArg)).findAny();
 		if (opt1.isPresent())

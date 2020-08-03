@@ -11,15 +11,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import jyatlon.core.Block.BinaryTestBlock;
 import jyatlon.core.Block.CallBlock;
 import jyatlon.core.Block.ControlBlock;
 import jyatlon.core.Block.ControlOperator;
+import jyatlon.core.Block.LogicalTestBlock;
 import jyatlon.core.Block.OperationBlock;
 import jyatlon.core.Block.PathBlock;
 import jyatlon.core.Block.TextBlock;
 import jyatlon.core.Block.ValueBlock;
+import jyatlon.core.Struct.BinaryExp;
 import jyatlon.core.Struct.CallExp;
 import jyatlon.core.Struct.ControlExp;
+import jyatlon.core.Struct.IfExp;
 import jyatlon.core.Struct.Line;
 import jyatlon.core.Struct.Operation;
 import jyatlon.core.Struct.PathArg;
@@ -41,6 +45,7 @@ import jyatlon.generated.YATLLexer;
  */
 public class BlockBuilder {
 	
+	public static final String HIDDEN_HEADER = "=$=\n";
 	public static final String ROOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT));
 	
 //	private final String fullText;
@@ -69,7 +74,7 @@ public class BlockBuilder {
 		t.section.forEach(section -> {
 			PathBlock b = parseSection(fullText, section);
 			if (pathBlocks.put(b.pathname, b) != null)
-				throw new IllegalStateException("Duplicated path name: " + b.pathname);
+				throw new BlockBuildingError("duplicated path name " + b.pathname, b.from);
 		});
 
 		
@@ -81,18 +86,21 @@ public class BlockBuilder {
 			PathBlock toCall = null;
 			if (!vb.call.isRelative) {
 				toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
+				if (toCall == null)
+					throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
 			} else {
 				// Add parent block path to call block if call is relative
-				CallBlock newCB = pb.path != null ? new CallBlock(pb.path.path.add(vb.call.path), pb.path.isRelative) : vb.call;
+				CallBlock newCB = pb.path != null ? new CallBlock(pb.path.path.add(vb.call.path), pb.path.isRelative, vb.from) : vb.call;
 				
 				// If new call block is absolute (as by parent) then check again for an exact match
 				toCall = newCB.isRelative
 						? getRelativePathBlockToCall(pathBlocks, newCB)
 						: getAbsolutePathBlockToCall(pathBlocks, newCB);
+
 			}
-			
 			if (toCall == null)
-				throw new IllegalStateException("Cannot find destination for " + vb.call.name);
+				throw new BlockBuildingError("cannot find destination for " + vb.call.name, vb.from);
+
 			// TODO Add detection for possible infinite loop (warn user)
 			
 			vb.call.setBlockToCall(toCall);
@@ -143,7 +151,7 @@ public class BlockBuilder {
 			if (comp.size() == 1)
 				result = comp.get(0);
 			else if (!comp.isEmpty())
-				throw new IllegalStateException("Many destination found for call " + call.name);
+				throw new BlockBuildingError("multiple paths found for call " + call.name, call.from);
 		}
 		return result;
 	}
@@ -191,7 +199,7 @@ public class BlockBuilder {
 		if (good != null && bad == null)
 			return good;
 		else if (good != null && bad != null)
-			throw new IllegalStateException("Ambiguous destination for call " + newCB.path.classes);
+			throw new BlockBuildingError("ambiguous path for call " + newCB.path.classes, newCB.from);
 	
 		return null;
 	}
@@ -202,7 +210,7 @@ public class BlockBuilder {
 		
 //		Map<Section,List<Line>> sectionLines = new HashMap();
 		if (section.line == null)
-			return new PathBlock(cp == null ? ROOT : cp.name, cp, Collections.emptyList());
+			return new PathBlock(cp == null ? ROOT : cp.name, cp, Collections.emptyList(), section.from);
 
 		// Extract lines
 		List<Line> lines = section.line.stream().collect(Collectors.toList());
@@ -221,10 +229,10 @@ public class BlockBuilder {
 		
 		// Process lines
 		List<Block> blocks = parseLines(fullText, lines);
-		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.name, cp, blocks);
+		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.name, cp, blocks, section.from);
 		
 		// Compute value blocks
-		ControlBlock cb = extractControlBlock(new ControlBlock(pb), blocks.iterator());
+		ControlBlock cb = extractControlBlock(new ControlBlock(pb, pb.from), blocks.iterator());
 //		cb.setValues(extractControlValues(cb));
 		pb.init(cb);
 		
@@ -239,7 +247,7 @@ public class BlockBuilder {
 		if (path == null)
 			return null;
 
-		return new CallBlock(parsePathArg(path.pathArg), path.anyPathOp != null);
+		return new CallBlock(parsePathArg(path.pathArg), path.anyPathOp != null, path.from);
 	}
 	private static ValuePath parsePathArg(List<PathArg> pathArgs) {
 		ValuePath p = null;
@@ -256,52 +264,57 @@ public class BlockBuilder {
 
 		lines.forEach(line -> {
 			AtomicBoolean insideComment = new AtomicBoolean(false);
-			line.lineExp.forEach(lineExp -> {
-				
-				if (lineExp.commentOp != null) {
-					insideComment.set(!insideComment.get());
-				} else if (lineExp.controlExp != null) {
-					if (!insideComment.get()) {
-						if (buffer.length() > 0) {
-							result.add(new TextBlock(buffer.toString()));
-							buffer.setLength(0);
+			if (line.lineExp != null) {
+				line.lineExp.forEach(lineExp -> {
+					
+					if (lineExp.commentOp != null) {
+						insideComment.set(!insideComment.get());
+					} else if (lineExp.controlExp != null) {
+						if (!insideComment.get()) {
+							if (buffer.length() > 0) {
+								result.add(new TextBlock(buffer.toString(), lineExp.from));
+								buffer.setLength(0);
+							}
+							result.add(parseControlExp(lineExp.controlExp));
 						}
-						result.add(parseControlExp(lineExp.controlExp));
-					}
-				} else if (lineExp.escapedChar != null) {
-					if (!insideComment.get()) {
-						String esc = getStructText(fullText, lineExp);
-						buffer.append(esc.charAt(esc.length()-1)); // Remove escape code
-					}
-				} else if (lineExp.rawText != null) {
-					if (!insideComment.get()) {
-						buffer.append(getStructText(fullText, lineExp));
-					}
-				} else if (lineExp.value != null) {
-					if (!insideComment.get()) {
-						if (buffer.length() > 0) {
-							result.add(new TextBlock(buffer.toString()));
-							buffer.setLength(0);
+					} else if (lineExp.escapedChar != null) {
+						if (!insideComment.get()) {
+							String esc = getStructText(fullText, lineExp);
+							buffer.append(esc.charAt(esc.length()-1)); // Remove escape code
 						}
-						if (lineExp.value.valueExp != null)
-							result.add(parseValue(lineExp.value));
-						else
-							throw new IllegalStateException("To be implemented"); // FIXME To be implemented
+					} else if (lineExp.rawText != null) {
+						if (!insideComment.get()) {
+							buffer.append(getStructText(fullText, lineExp));
+						}
+					} else if (lineExp.value != null) {
+						if (!insideComment.get()) {
+							if (buffer.length() > 0) {
+								result.add(new TextBlock(buffer.toString(), lineExp.from));
+								buffer.setLength(0);
+							}
+							if (lineExp.value.valueExp != null)
+								result.add(parseValue(lineExp.value));
+							else
+								throw new BlockBuildingError("to be implemented", lineExp.from); // FIXME To be implemented
+						}
+					} else {
+						throw new BlockBuildingError("not yet implemented line exp type", lineExp.from);
 					}
-				} else {
-					throw new IllegalStateException("Not yet implemented line exp type");
+				});
+	
+				// Add new line if needed: 
+				if (!result.isEmpty() && !insideComment.get()) {
+					if (result.peek().isControlOperator() && buffer.toString().trim().isEmpty())
+						buffer.setLength(0);
 				}
-			});
-
-			// Add new line if needed
-			if (!result.isEmpty() && !insideComment.get()) {
-				if (result.peek().isControlOperator() && buffer.toString().trim().isEmpty())
-					buffer.setLength(0);
-			}
+			} else
+				buffer.append(System.lineSeparator());
 
 		}); // line
-		if (buffer.length() > 0)
-			result.add(new TextBlock(buffer.toString()));
+		if (buffer.length() > 0) {
+			int textPos = lines.get(lines.size()-1).to-buffer.length();
+			result.add(new TextBlock(buffer.toString(), textPos));
+		}
 		return result;
 	}
 	private static ControlBlock extractControlBlock(ControlBlock currentBlock, Iterator<Block> i) {
@@ -314,16 +327,16 @@ public class BlockBuilder {
 				ControlOperator co = (ControlOperator)b;
 				boolean sameAlias = co.aliasName.equals(currentBlock.aliasName);
 				if (!sameAlias && co.operation == ControlBlock.CONTROL_BEGIN) {
-					currentControl.addBlock(extractControlBlock(new ControlBlock(currentBlock, co), i)); // Extract sub block
+					currentControl.addBlock(extractControlBlock(new ControlBlock(currentBlock, co, currentBlock.from), i)); // Extract sub block
 				} else if (co.operation == ControlBlock.CONTROL_BEGIN)
-					throw new IllegalStateException("Duplicated {begin:" + co.aliasName + "}") ;
+					throw new BlockBuildingError("duplicated control {begin:" + co.aliasName + "}", co.from) ;
 				else if (sameAlias && co.operation == ControlBlock.CONTROL_END) {
 					activeControl.put(co.operation, currentControl = co);
 					return validateControlBlock(currentBlock.init(activeControl));
 				} else if (sameAlias)
 					activeControl.put(co.operation, currentControl = co);
 				else
-					throw new IllegalStateException("Missing {begin:" + co.aliasName + "}") ;
+					throw new BlockBuildingError("missing control {begin:" + co.aliasName + "}", co.from) ;
 			} else 
 				currentControl.addBlock(b);
 //			else if (b.isValue())
@@ -335,7 +348,7 @@ public class BlockBuilder {
 		}
 		if (currentBlock.isSectionBlock())
 			return currentBlock;
-		throw new IllegalStateException("Missing {begin:" + currentBlock.aliasName + "}");
+		throw new BlockBuildingError("missing control {begin:" + currentBlock.aliasName + "}", currentBlock.from);
 	}
 	private static ControlBlock validateControlBlock(ControlBlock cb) {
 		// My alias MUST be defined at least once
@@ -345,36 +358,48 @@ public class BlockBuilder {
 		// Validate that all the control operators (except begin) do not reference the control alias.
 		// FIXME error message must be clearer
 		if (cb.before != null && cb.before.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new IllegalStateException("Invalid reference in {before " + cb.aliasName + "}");
+			throw new BlockBuildingError("invalid reference in {before " + cb.aliasName + "}", cb.before.from);
 		if (cb.between != null && cb.between.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new IllegalStateException("Invalid reference in {between " + cb.aliasName + "}");
+			throw new BlockBuildingError("invalid reference in {between " + cb.aliasName + "}", cb.between.from);
 		if (cb.after != null && cb.after.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new IllegalStateException("Invalid reference in {after " + cb.aliasName + "}");
+			throw new BlockBuildingError("invalid reference in {after " + cb.aliasName + "}", cb.after.from);
 		if (cb.empty != null && cb.empty.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new IllegalStateException("Invalid reference in {empty " + cb.aliasName + "}");
+			throw new BlockBuildingError("invalid reference in {empty " + cb.aliasName + "}", cb.empty.from);
 
 		// TODO Validate all aliases used everywhere are defined in block parents... 
 	
 		return cb;
 	}
 	private static ValueBlock parseValue(Value value) {
-		ValueBlock result = new ValueBlock(value.valueExp.valueArg, value.valueExp.aliasName, parseCallExp(value.callExp));
+		
+		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseLogicalTestBlock(value.ifExp), value.from);
 		if (value.valueExp.operation != null && !value.valueExp.operation.isEmpty())
 			value.valueExp.operation.forEach(o->result.addOperation(parseOperation(o)));
 		if (result.call != null && !result.call.isValidForValue())
-			throw new IllegalStateException("Alias only allowed at the end of a call in " + result.call.name);
+			throw new BlockBuildingError("alias only allowed at the end of a call in " + result.call.name, result.from);
 		return result;
 	}
-	private static ValueBlock parseValueExp(ValueExp value) {
-		ValueBlock result = new ValueBlock(value.valueArg, value.aliasName, null);
-		if (value.operation != null && !value.operation.isEmpty())
-			value.operation.forEach(o->result.addOperation(parseOperation(o)));
-		return result;
+	private static LogicalTestBlock parseLogicalTestBlock(IfExp exp) {
+		if (exp == null)
+			return null;
+		// TODO Validation: All logical ops must be equals
+//		if (exp.logicalOp.stream().distinct().limit(2).count() != 1)
+//			throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalOp, exp.from);
+		
+		List<BinaryTestBlock> ops = exp.logicalExp.binaryExp.stream().map(x -> parseBinaryTestBlock(x)).collect(Collectors.toList());
+		return new LogicalTestBlock(exp.logicalExp.from, ops, exp.logicalExp.logicalOp.get(0));
+	}
+	private static BinaryTestBlock parseBinaryTestBlock(BinaryExp exp) {
+		List<ValueBlock> values = exp.valueExp.stream().map(x -> parseValueExp(x, null, null, x.from)).collect(Collectors.toList());
+		return new BinaryTestBlock(exp.from, exp.binaryOp, values);
+	}
+	private static ValueBlock parseValueExp(ValueExp valueExp, CallBlock cb, LogicalTestBlock tb, int from) {
+		return new ValueBlock(valueExp.unaryOp, valueExp.valueArg, valueExp.aliasName, cb, tb, from);
 	}
 	private static OperationBlock parseOperation(Operation op) {
-		OperationBlock result = new OperationBlock(op.methodName, op.aliasName);
+		OperationBlock result = new OperationBlock(op.methodName, op.aliasName, op.from);
 		if (op.argExp != null && op.argExp.valueExp != null && !op.argExp.valueExp.isEmpty())
-			op.argExp.valueExp.forEach(a->result.addArgument(parseValueExp(a)));
+			op.argExp.valueExp.forEach(a->result.addArgument(parseValueExp(a, null, null, a.from)));
 		return result;
 	}
 	private static ControlOperator parseControlExp(ControlExp ce) {
@@ -387,6 +412,6 @@ public class BlockBuilder {
 //		controls.put(ce.aliasName, array);
 		int operationId = ControlBlock.extractControlId(ce.controlOp);
 		boolean isEndOfBlock = operationId == ControlBlock.CONTROL_END;
-		return new ControlOperator(isEndOfBlock, ce.aliasName, operationId);
+		return new ControlOperator(isEndOfBlock, ce.aliasName, operationId, ce.from);
 	}
 }

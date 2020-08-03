@@ -74,7 +74,7 @@ logicalOp
 	;
 
 binaryExp
-	: unaryOp? SPACE* valueExp (SPACE* binaryOp SPACE* valueExp)*
+	: valueExp (SPACE* binaryOp SPACE* valueExp)?
 	| '(' SPACE* binaryExp SPACE* ')'
 	;
 
@@ -87,7 +87,7 @@ binaryOp
 	;
 
 valueExp
-	: valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation*
+	: (unaryOp SPACE*)? valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation*
 	| '(' SPACE* valueExp SPACE* ')'
 	;
 	
@@ -185,6 +185,7 @@ PIPE			: '|' ;
 OR				: PIPE PIPE ;
 AMP				: '&' ;
 AND				: AMP AMP ;
+PERCENT			: '%';
 
 NAME 
     : ( ('a'..'z') | ('A'..'Z') | ('_') ) 

@@ -15,6 +15,11 @@ import java.util.stream.IntStream;
  * This object is processed by: BlockProcessor
  */
 public abstract class Block {
+	public final int from;
+	public Block(int from) {
+		super();
+		this.from = from;
+	}
 	boolean isControlOperator() {
 		return false;
 	}
@@ -55,15 +60,15 @@ public abstract class Block {
 		ControlOperator end;
 //		List<ControlBlock> subControls;
 		
-		public ControlBlock(PathBlock parent) {
-			super();
+		public ControlBlock(PathBlock parent, int from) {
+			super(from);
 			this.parent = parent;
 			this.aliasName = null;
-			this.begin = new ControlOperator(false, null, ControlBlock.CONTROL_BEGIN);
+			this.begin = new ControlOperator(false, null, ControlBlock.CONTROL_BEGIN, from);
 			this.end = null;
 		}
-		public ControlBlock(ControlBlock parent, ControlOperator beginControl){
-			super();
+		public ControlBlock(ControlBlock parent, ControlOperator beginControl, int from){
+			super(from);
 //			this.firstBlockIndex = firstIndex;
 			this.parent= parent;
 			this.aliasName = beginControl.aliasName;
@@ -103,8 +108,8 @@ public abstract class Block {
 		final int operation;
 		final List<Block> blocks = new ArrayList<Block>();
 		
-		public ControlOperator(boolean isEndOfBlock, String aliasName, int operation) {
-			super();
+		public ControlOperator(boolean isEndOfBlock, String aliasName, int operation, int from) {
+			super(from);
 			this.isEndOfBlock = isEndOfBlock;
 			this.aliasName = aliasName;
 			this.operation = operation;
@@ -126,8 +131,8 @@ public abstract class Block {
 		List<Block> blocks;
 		ControlBlock controlBlock;
 		
-		public PathBlock(String pathname, CallBlock path, List<Block> blocks) {
-			super();
+		public PathBlock(String pathname, CallBlock path, List<Block> blocks, int from) {
+			super(from);
 			this.pathname = pathname;
 			this.path = path;
 			this.blocks = blocks;
@@ -142,7 +147,8 @@ public abstract class Block {
 	public static class TextBlock extends Block {
 		final String text;
 
-		public TextBlock(String text) {
+		public TextBlock(String text, int from) {
+			super(from);
 			this.text = text;
 		}
 		boolean isText() {
@@ -153,16 +159,20 @@ public abstract class Block {
 	// Do not put logic in this class
 	// When something can be pre-computed, put the result here
 	public static class ValueBlock extends Block {
+		final String unaryOp;
 		final String argName;
 		final String aliasName;
 		final CallBlock call;
-		final List<OperationBlock> ops = new ArrayList<OperationBlock>();
+		final LogicalTestBlock test;
+		final List<OperationBlock> ops = new ArrayList<>();
 		
-		public ValueBlock(String argName, String aliasName, CallBlock call) {
-			super();
+		public ValueBlock(String unaryOp, String argName, String aliasName, CallBlock call, LogicalTestBlock test, int from) {
+			super(from);
+			this.unaryOp = unaryOp;
 			this.argName = argName;
 			this.aliasName = aliasName;
 			this.call = call;
+			this.test = test;
 		}
 		boolean isValue() {
 			return true;
@@ -190,8 +200,8 @@ public abstract class Block {
 		final String aliasName;
 		final List<ValueBlock> args = new ArrayList<ValueBlock>();
 		
-		public OperationBlock(String methodName, String aliasName) {
-			super();
+		public OperationBlock(String methodName, String aliasName, int from) {
+			super(from);
 			this.methodName = methodName;
 			this.aliasName = aliasName;
 		}
@@ -199,15 +209,15 @@ public abstract class Block {
 			args.add(arg);
 		}
 	}
-	public static class CallBlock {
+	public static class CallBlock extends Block {
 
 		public final ValuePath path;
 		public final String name;
 		public final boolean isRelative;
 		private PathBlock toCall;
 		
-		public CallBlock(ValuePath path, boolean isRelative) {
-			super();
+		public CallBlock(ValuePath path, boolean isRelative, int from) {
+			super(from);
 			this.path = path;
 			this.isRelative = isRelative;
 			this.name = computeName();
@@ -230,5 +240,22 @@ public abstract class Block {
 			return path.aliases.length > 0 && IntStream.range(0, path.aliases.length - 1).allMatch(a->path.aliases[a] == null);
 		}
 	}
-	
+	public static class LogicalTestBlock extends Block { // FIXME To be expanded later
+		public final List<BinaryTestBlock> exp;
+		public final String op;
+		public LogicalTestBlock(int from, List<BinaryTestBlock> exp, String op) {
+			super(from);
+			this.exp = exp;
+			this.op = op;
+		}
+	}
+	public static class BinaryTestBlock extends Block {
+		public final String op;
+		public final List<ValueBlock> values;
+		public BinaryTestBlock(int from, String op, List<ValueBlock> values) {
+			super(from);
+			this.op = op;
+			this.values = values;
+		}
+	}
 }

@@ -16,8 +16,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jyatlon.core.Block.BinaryTestBlock;
 import jyatlon.core.Block.ControlBlock;
 import jyatlon.core.Block.ControlOperator;
+import jyatlon.core.Block.LogicalTestBlock;
 import jyatlon.core.Block.OperationBlock;
 import jyatlon.core.Block.PathBlock;
 import jyatlon.core.Block.TextBlock;
@@ -100,7 +102,7 @@ public class BlockProcessor {
 		// Iterate begin control
 		int control = 0; // Ensure this process will end some day!
 		List<List<ValuePath>> matrix = new ArrayList<List<ValuePath>>(); // One element per ValueBlock
-		LinkedList<ValueBlock> toProcess = new LinkedList(co.getValues());
+		LinkedList<ValueBlock> toProcess = new LinkedList<>(co.getValues());
 		while (!toProcess.isEmpty() && control < toProcess.size()) { // FIXME Try to avoid this kind of processing here!!!
 			ValueBlock vb = toProcess.removeFirst();
 			
@@ -150,7 +152,7 @@ public class BlockProcessor {
 		
 		// Iterate all combinations
 		StringWriter sw = new StringWriter();
-		List<String> result = new ArrayList();
+		List<String> result = new ArrayList<>();
 		for (List<ValuePath> mm : m) {
 			
 			// When they share aliases, they must be compatible
@@ -193,31 +195,77 @@ public class BlockProcessor {
 	}
 	private static void writeBlock(ValueBlock vb, Writer w, List<ValuePath> paths, Matcher matcher) throws IOException {
 		// Current value path
-		ValuePath current = vb.getPath();
+//		ValuePath current = vb.getPath();
 		
 		// Find which path element is matching the current value
-		boolean found = false;
-		Object o = null;
-		FIND_PATH: for (ValuePath path : paths) {
-			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) { // FIXME use stream
-				found = true;
-				o = path.getObject();
-				break FIND_PATH;
-			}
-		}
-		if (found && o != null) {
+//		boolean found = false;
+//		Object o = null;
+//		FIND_PATH: for (ValuePath path : paths) {
+//			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) { // FIXME use stream
+//				found = true;
+//				o = path.getObject();
+//				break FIND_PATH;
+//			}
+//		}
+		
+		boolean test = computeTest(vb.test, paths, matcher);
+		
+		ValuePath foundPath = getMatchingPath(vb.getPath(), paths);
+		if (foundPath != null) {
+			Object o = foundPath.getObject();
 			if (vb.call == null)
 				w.append(o.toString());
 			else // TODO called path must match actual object class or interface
 				writeBlock(vb.call.getBlockToCall(), w, o, matcher);
-		} else if (!found)
+		} else if (foundPath == null)
 			throw new IllegalStateException("Path not found for current value!"); // FIXME should this ever happen?
+	}
+	private static ValuePath getMatchingPath(ValuePath current, List<ValuePath> paths) { // path=found, null=not found
+		// Find which path element is matching the current value
+		for (ValuePath path : paths)
+			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) // FIXME use stream
+				return path;
+		return null;
+	}
+	// OR | AND
+	private static boolean computeTest(LogicalTestBlock test, List<ValuePath> paths, Matcher matcher) {
+		if ("||".equals(test.op)) {
+			for (BinaryTestBlock tb : test.exp)
+				if (computeTest(tb, paths, matcher))
+					return true;
+			return false;
+		} else { // "&&" is assumed here
+			for (BinaryTestBlock tb : test.exp)
+				if (!computeTest(tb, paths, matcher))
+					return false;
+			return true;
+		}
+	}
+	// NOT EQUAL | EQUAL EQUAL | '>' | '>' EQUAL | '<' | '<' EQUAL | '<>'
+	private static boolean computeTest(BinaryTestBlock test, List<ValuePath> paths, Matcher matcher) {
+		ValueBlock vb1 = test.values.get(0);
+		ValuePath vp1 = getMatchingPath(vb1.getPath(), paths);
+		if (vp1 == null)
+			throw new IllegalStateException("Left value not found");
+		ValueBlock vb2 = test.values.get(1);
+		ValuePath vp2 = getMatchingPath(vb2.getPath(), paths);
+		if (vp2 == null)
+			throw new IllegalStateException("Right value not found");
+		
+		if ("==".equals(test.op))
+			return matcher.isSameObject(vp1.getObject(), vp2.getObject());
+		else if ("!=".equals(test.op) || "<>".equals(test.op))
+			return !matcher.isSameObject(vp1.getObject(), vp2.getObject());
+		throw new IllegalStateException("Binary operator " + test.op + " is not yet implemented");
 	}
 	private static void writeBlock(TextBlock tb, Writer w, Object r, Matcher matcher) throws IOException {
 		w.append(tb.text);
 	}
-	public static List<ValuePath> computeValues(ValueBlock vb, Object root, Map<String,Status> statuses) {
+	private static List<ValuePath> computeValues(ValueBlock vb, Object root, Map<String,Status> statuses) {
 		// Init value object
+		if (vb.unaryOp != null)
+			throw new IllegalStateException("unaryOp not yet implemented"); // FIXME To be implemented
+		
 		Object obj;
 		if (!vb.argName.equals(BlockBuilder.ROOT))
 			throw new IllegalStateException("To be implemented"); // FIXME To be implemented
@@ -252,7 +300,7 @@ public class BlockProcessor {
 		
 		return result;
 	}
-	public static ValuePath extractObject(OperationBlock ob, ValuePath p) {
+	private static ValuePath extractObject(OperationBlock ob, ValuePath p) {
 		Object x = null;
 		Object o = p.getObject();
 		Class<?> c = o.getClass();

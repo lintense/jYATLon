@@ -128,16 +128,14 @@ public class ObjectTree {
 			return Collections.emptyMap();
 		for (Field field : filteredFields){
 			try {
-				if (field.trySetAccessible()) {
-					field.setAccessible(true);
-					Object content = field.get(re);
-					if (!done.containsKey(content)) // Watch out: all empty maps are considered equals!!!
-						result.put(field, field.get(re));
-					else 
-						result.put(field, formatName(content, done.get(content)));
-				}
+				field.setAccessible(true);
+				Object content = field.get(re);
+				if (!done.containsKey(content)) // Watch out: all empty maps are considered equals!!!
+					result.put(field, field.get(re));
+				else 
+					result.put(field, formatName(content, done.get(content)));
 			} catch (Exception e) {
-				throw new IllegalStateException("Cannot extract field value", e);
+				throw new IllegalStateException("Cannot extract field value - Must be tested under Java version 8", e);
 			}
 		}
 		return result;
