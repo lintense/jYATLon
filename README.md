@@ -32,6 +32,7 @@ yatl.merge(root, writer); // The same as Velocity!
 - YATL is intended to be the simplest templating language possible, period.
 - As a general rule, [values](#value), [commands](#command) and [comments](#comment) begin and end on the same line.
 - Also, be aware that spaces are not allowed inside [value expressions](#value), [commands](#command) and [paths](#path).
+- YATL is particularly well suited for working with tree data structures and to generate code.
 
 #### <a id="root"></a>Root context
 - The root context aka `$` refers to the object that is provided when launching the template engine. (See [running the program](#running) above)
@@ -41,7 +42,7 @@ yatl.merge(root, writer); // The same as Velocity!
 - A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](https://mustache.github.io/)!
 - It can be a constant: `{{'any text'}}` or `{{"I'm a text!"}}`
 - The result of a value expression is always inserted where it is declared.
-- A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any public methods that is valid for this object and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
+- A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any **public** methods that is valid for this object and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
 - You can invoke public accessors with `{{$.getSize()}}` or `{{$.getSize}}` or even `{{$.size}}` as you prefer.
 - You can use a Map key to access one of its value `{{Map.key}}`.
 - If you want to insert any text depending on a value, for example when it is empty or when it is a collection, then assign an [alias](#alias) to this value and enclose it in a [block](#block).
@@ -60,22 +61,21 @@ Root, Alias                 // Well... those are the aliases!
 - Any `null` object or empty `String` or `Collection` are considered *false* `{{if $ 'Root is not null!'}}`.
 
 #### <a id="alias"></a>Alias
-- You may assign an alias to any part of a [value](#value) expression. For exemple `{{$:ALIAS_1.toString:ALIAS_2.substring(1,4):ALIAS_3}}`.
+- You may assign an alias (an alternate name) to any part of a [value](#value) expression. For exemple `{{$:ALIAS_1.toString:ALIAS_2.substring(1,4):ALIAS_3}}`.
 - Aliases **MUST** start with a letter or an underscore but they can also contain numbers: `[_A-Za-z][_A-Za-z0-9]*`.
 - If any part of a [value](#value) expression is `null` or empty `""` then no text will be inserted. If you intend to provide a default text in those cases, then you **MUST** provide the [value](#value) with an alias and put it into a [block](#block).
 - Any alias outside of a [block](#block) has no effect.
-- For clarity, it is possible to prepare an alias at the begining of any [block](#block) `{prepare $.valueExp:ALIAS}`. Prepared alias can be easily inserted later `{{ALIAS}}` in the block.
+- Alias can be initialized inside a [block](#block) `{init $.valueExp:ALIAS}`. An already defined alias is trivial to reuse: `{{ALIAS}}`.
 
-##### Collection
-- In case the [value](#value) is a `Collection` it can be usefull to know about the *index of* one element or the *size of* the `Collection` itself.
+##### Collection (not yet implemented)
+- In case the [value](#value) is a `Collection`, it can be usefull to know about the *index of* one element or the *size of* the `Collection` itself.
 - The `indexOf` function returns the index of the current alias [value](#value) starting by `1`: `{{indexOf($.val:ALIAS)}}`.
  - The `sizeOf` function returns the number of visible alias [values](#value): `{{sizeOf($.val:ALIAS)}}`.
 - `Collection` functions may be used inside a condition: `{{if indexOf(ALIAS) == 1 'First:'}}`.
 
 #### <a id="block"></a>Block
-- A block is delimited by controls that are enclosed into **single braces** `{` `}`.
-- A block is always associated to a single [alias](#alias). Its role is to control the visibilty of the text that surrounds the [value](#value) associated with its [alias](#alias).
 - A block always begins with `{begin ALIAS}` and always ends with `{end ALIAS}`.
+- A block is always associated to a single [alias](#alias). Its role is to control the visibilty of the text **surrounding** the [values](#value) containing this [alias](#alias).
 ```javascript
 {begin ALIAS} // The most simple block!
     {{$.val:ALIAS}}
@@ -83,10 +83,10 @@ Root, Alias                 // Well... those are the aliases!
 ```
 
 ##### Empty value
-- You may include a `{empty ALIAS}` control followed by the text you want to appear when the [value](#value) is empty.
+- You may include a `{empty ALIAS}` control followed by the text you want to appear in case the [value](#value) is empty.
 ```javascript
 {begin ALIAS}
-    x = {{$.val:ALIAS}} // Value Expression: always under {begin}
+    x = {{$.val:ALIAS}}; // Value Expression: always under {begin}
 {empty ALIAS}
     x = null; // Text to appear if the Value is empty
 {end ALIAS}
@@ -96,23 +96,22 @@ Root, Alias                 // Well... those are the aliases!
 - All associated [alias](#alias) expressions **MUST** be declared **directly** under the `{begin ALIAS}` control.
 ```javascript
 {begin ALIAS}
-x = List( // Text to appear before the whole value. Assumed to be a Collection here...
 {{ALIAS}} // Value Expression: always directly under {begin} 
 {before ALIAS}
-" // Text to appear before each Value
+x = new List(" // Text to appear once, before the first value.
 {between ALIAS}
-", // Text to appear between each Value
+"," // Text to appear between each values.
 {after ALIAS}
-"); // Text to appear after the whole Collection
+"); // Text to appear once, after the whole Collection.
 {empty ALIAS}
-x = null; // Text to appear if the Collection is empty
+x = null; // Text to appear if the Collection is empty.
 {end ALIAS}
 ```
-- The previous example (if you remove the java comments) would return `x = List("a","b");` or `x = null;` in case there is nothing to display.
+- The previous example (if you remove the java comments) would return `x = new List("a","b");` or `x = null;` in case there is nothing to display.
 
-##### Short notation
+##### Short notation (not yet implemented)
 - When the `before, between, after, empty` sequences are short, you may use an alternative notation such as `{begin ALIAS |("|","|")|()}` for clarity.
-- The first character found after the [alias](#alias) **MUST** be repeated exactly 4 times in order to be correctly interpreted as the separator. So you can use any single character that you want for that matter.
+- The first character found after the [alias](#alias) **MUST** be repeated exactly **4 times** in order to be correctly interpreted as the separator. You can use any **single** character that you want for that matter.
 - Remember that all control blocks are single lined.
 
 ##### Block imbrication
@@ -139,18 +138,19 @@ x = null; // Text to appear if the Collection is empty
 - The previous example will write 3 times the same [value](#value) or nothing if the [values](#value) are not matching.
 
 #### <a id="path"></a>Path Block
-- Basically, a path block is a block that is defined outside of where it is actually inserted.
-- A path block always start with a header such as `=== CLASS ===` where *CLASS* is the *java class* of the context passed to that block.
+- A path block is a block that is defined somewhere else it is actually inserted.
+- A path block always start with a header such as `=== CLASS ===` where *CLASS* is the *java class* of the passed context (or the value of a `"class"` key, in case of a `Map`).
 - The calling context class path may be added to form a sequence `=== CALLER/CLASS ===` so it can be referenced in the path block. This path is absolute and can only be called from the [root](#root) context.
-- Use the *any path* syntax `=== .../CLASS ===` to allow the path block to be called from any context having a given class.
+- Use the *any path* syntax `=== .../CLASS ===` to allow the path block to be called from any context of a given class.
 - The path name **MUST NOT** contain spaces.
 
 ##### Calling 
 - To insert a path block, use the `call` operator inside a [value](#value) `{{call PATH $.val}}`. Remember that the path **MUST** match the actual class or interface returned by the [value](#value) expression.
 - A path block can also be conditionnaly inserted `{{if $.test call PATH $.val}}`.
 - It is possible to use [alias](#alias) to discriminate among multiple similar paths.
+- Use the *any* `{{call .../PATH $.val}}` *path* notation to include any path blocks in the search.
 ```javascript
-{{call Class:Case1 $.valOfClass}} // Invoking a specific "case 1" for a Class
+{{call .../Class:Case1 $.valOfClass}} // Invoking a specific "case 1" for a Class
 
 === .../Class:Case1 ===
 // Path block for case 1
@@ -163,16 +163,16 @@ x = null; // Text to appear if the Collection is empty
 - When inside a path block, you can access the current context [value](#value) simply by its path name `{{Class}}` or it alias name `{{Case1}}`.
 - The following example show how you can reference the calling block [values](#value).
 ```javascript
-=== ...CallingClass:ANCESTOR/MyClass:CURRENT ===
+=== .../CallingClass:ANCESTOR/MyClass:CURRENT ===
 
 {{CallingClass.name}}.{{MyClass.name}} // Output both context names using their path/class names
 {{ANCESTOR.name}}.{{CURRENT.name}} // Output both context names using their path aliases
 ```
 
-##### JSON
-- It is possible to use *JSON* files as a [root](#root) object.
-- *JSON* files are loaded into `Map` objects. 
-- `Map` can have a *class* key that can be used as a path.
+##### JSON (not yet implemented)
+- It is possible to use *JSON* files as [root](#root) objects.
+- *JSON* files are first loaded into `Map` objects. 
+- `Map` should have a `"class"` key to be used as a path.
 ```javascript
 // JSON expression emulating a Person object 
 // that will be loaded into a Map object
@@ -180,7 +180,7 @@ x = null; // Text to appear if the Collection is empty
 ```
 
 
-#### <a id="command"></a>Call command
+#### <a id="command"></a>Call command (not yet implemented)
 - When using a call command, it is possible to specify where you want to insert the text.
 - Call and [values](#value) are pretty similar except that call commands are defined with **single braces** `{call PATH VALUE}` just like controls.
 - You can use conditional to decide when to invoke a command `{if !$.test call PATH $.val}`.
@@ -253,7 +253,7 @@ T0 // This is the normal text for this document
 123### // Will output 123 without a new line
 123###456### // Will output 123 WITH a new line (and this java comment!!!)
 ```
-- The **escape** character `~` will make any immediately following character, including itself, to be treated as normal text. This is the only character that always need to be escaped.
+- The **escape** character `~` will make any immediately following character, including itself, to be treated as normal text. This is the only character that always needs to be escaped.
 - Whenever possible, the engine will try to escape the invalid char sequences for you.
 ```javascript
 ~{begin test~}### // Will output {begin test} (without this comment!)
