@@ -3,9 +3,11 @@ package jyatlon.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -48,11 +50,6 @@ public class BlockBuilder {
 	public static final String HIDDEN_HEADER = "=$=\n";
 	public static final String ROOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT));
 	
-//	private final String fullText;
-//	public BlockBuilder(String fullText) {
-//		super();
-//		this.fullText = fullText;
-//	}
 	private static String getStructText(String fullText, Struct s) {
 		return fullText.substring(s.from, s.to);
 	}
@@ -76,7 +73,25 @@ public class BlockBuilder {
 			if (pathBlocks.put(b.pathname, b) != null)
 				throw new BlockBuildingError("duplicated path name " + b.pathname, b.from);
 		});
-
+		
+		// Gather all alias path blocks aliases
+		Map<PathBlock,Set<String>> aliasForPathBlock = new HashMap<>();
+		pathBlocks.values().stream().forEach(pb->pb.getValues().forEach(vb -> {
+			Set<String> x = aliasForPathBlock.getOrDefault(pb, new HashSet<>());
+			aliasForPathBlock.put(pb, x);
+			x.addAll(vb.getAliases());
+		}));
+		
+		// Validate the pivot of each value expression
+		// A value expression always starts with any of: the root context, a path or an alias.
+		// Reason: To help the user, no implicit value.
+		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
+			if (!(BlockBuilder.ROOT.equals(vb.argName)
+			|| (pb.path != null && pb.path.path.hasClassName(vb.argName))
+			|| Utils.isString(vb.argName)
+			|| aliasForPathBlock.get(pb).contains(vb.argName))) // TODO should use Sets instead of a Lists...
+				throw new BlockBuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
+		}));
 		
 		// Compute the destination of each value call blocks
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().filter(vb->vb.call != null).forEach(vb->{
@@ -99,12 +114,14 @@ public class BlockBuilder {
 
 			}
 			if (toCall == null)
-				throw new BlockBuildingError("cannot find destination for " + vb.call.name, vb.from);
+				throw new BlockBuildingError("cannot find any path for " + vb.call.name, vb.from);
 
 			// TODO Add detection for possible infinite loop (warn user)
 			
 			vb.call.setBlockToCall(toCall);
 		}));
+		
+		// TODO Validate that alias names in paths are unique in the path (also w.r.t class names)
 		
 		long t2 = System.currentTimeMillis();
 		System.out.println("Completed in " + (t2-t1) + " milliseconds.");
@@ -224,9 +241,7 @@ public class BlockBuilder {
 			last--;
 		lines = lines.subList(first, last);
 //		sectionLines.put(section, lines);
-		
-
-		
+				
 		// Process lines
 		List<Block> blocks = parseLines(fullText, lines);
 		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.name, cp, blocks, section.from);
@@ -301,20 +316,29 @@ public class BlockBuilder {
 						throw new BlockBuildingError("not yet implemented line exp type", lineExp.from);
 					}
 				});
-	
-				// Add new line if needed: 
-				if (!result.isEmpty() && !insideComment.get()) {
-					if (result.peek().isControlOperator() && buffer.toString().trim().isEmpty())
-						buffer.setLength(0);
+				
+				// Something left in buffer, add it in text block
+				if (buffer.length() > 0) { 
+//					int textPos = lines.get(lines.size()-1).to-buffer.length();
+					int textPos = line.lineExp.get(line.lineExp.size()-1).to-buffer.length();
+					result.add(new TextBlock(buffer.toString(), textPos));
+					buffer.setLength(0);
 				}
-			} else
-				buffer.append(System.lineSeparator());
+				// Add new line if needed: 
+				if (!result.peek().isControlOperator() && !insideComment.get())
+					result.add(new TextBlock(System.lineSeparator(), line.from));
+				
+//				if (!result.isEmpty() && !insideComment.get()) {
+//					if (result.peek().isControlOperator() && buffer.toString().trim().isEmpty())
+//						buffer.setLength(0);
+//				}
 
+			} else // Empty line
+				result.add(new TextBlock(System.lineSeparator(), line.from));
+//				buffer.append(System.lineSeparator());
+			
 		}); // line
-		if (buffer.length() > 0) {
-			int textPos = lines.get(lines.size()-1).to-buffer.length();
-			result.add(new TextBlock(buffer.toString(), textPos));
-		}
+
 		return result;
 	}
 	private static ControlBlock extractControlBlock(ControlBlock currentBlock, Iterator<Block> i) {
@@ -371,10 +395,7 @@ public class BlockBuilder {
 		return cb;
 	}
 	private static ValueBlock parseValue(Value value) {
-		
 		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseLogicalTestBlock(value.ifExp), value.from);
-		if (value.valueExp.operation != null && !value.valueExp.operation.isEmpty())
-			value.valueExp.operation.forEach(o->result.addOperation(parseOperation(o)));
 		if (result.call != null && !result.call.isValidForValue())
 			throw new BlockBuildingError("alias only allowed at the end of a call in " + result.call.name, result.from);
 		return result;
@@ -398,7 +419,15 @@ public class BlockBuilder {
 		return new BinaryTestBlock(exp.from, exp.binaryOp, values);
 	}
 	private static ValueBlock parseValueExp(ValueExp valueExp, CallBlock cb, LogicalTestBlock tb, int from) {
-		return new ValueBlock(valueExp.unaryOp, valueExp.valueArg, valueExp.aliasName, cb, tb, from);
+		// Initialize value path
+		ValuePath vp = new ValuePath(valueExp.valueArg, valueExp.aliasName, null);
+		if (valueExp.operation != null && !valueExp.operation.isEmpty())
+			for (Operation o : valueExp.operation)
+				vp = vp.add(o.methodName, o.aliasName, null);
+		ValueBlock result = new ValueBlock(valueExp.unaryOp, valueExp.valueArg, valueExp.aliasName, cb, tb, vp, from);
+		if (valueExp.operation != null && !valueExp.operation.isEmpty())
+			valueExp.operation.forEach(o->result.addOperation(parseOperation(o)));
+		return result;
 	}
 	private static OperationBlock parseOperation(Operation op) {
 		OperationBlock result = new OperationBlock(op.methodName, op.aliasName, op.from);

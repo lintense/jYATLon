@@ -56,7 +56,7 @@ Template@0;
                             to: (Integer)26;
                             value: null;
                         4: LineExp@13;
-                            commentOp: (String)"###";
+                            commentOp: (String)"%%%";
                             controlExp: null;
                             escapedChar: null;
                             from: (Integer)26;

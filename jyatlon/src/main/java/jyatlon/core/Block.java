@@ -1,8 +1,10 @@
 package jyatlon.core;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -165,14 +167,16 @@ public abstract class Block {
 		final CallBlock call;
 		final LogicalTestBlock test;
 		final List<OperationBlock> ops = new ArrayList<>();
+		final ValuePath valuePath;
 		
-		public ValueBlock(String unaryOp, String argName, String aliasName, CallBlock call, LogicalTestBlock test, int from) {
+		public ValueBlock(String unaryOp, String argName, String aliasName, CallBlock call, LogicalTestBlock test, ValuePath valuePath, int from) {
 			super(from);
 			this.unaryOp = unaryOp;
 			this.argName = argName;
 			this.aliasName = aliasName;
 			this.call = call;
 			this.test = test;
+			this.valuePath = valuePath;
 		}
 		boolean isValue() {
 			return true;
@@ -180,18 +184,17 @@ public abstract class Block {
 		void addOperation(OperationBlock op) {
 			ops.add(op);
 		}
-		ValuePath getPath() {
-			ValuePath p = new ValuePath(argName, aliasName, null);
-			for (OperationBlock ob : ops)
-				p = p.add(ob.methodName, ob.aliasName, null);
-			return p;
-		}
-		public List<String> getAliases(){
-			List<String> result = new ArrayList<String>();
-			result.add(aliasName != null ? aliasName : argName);
+		/**
+		 * @return A list of pure aliases for that value.
+		 * Aliases that are used as arguments do not count.
+		 * Aliases are returned in a Set for convenience.
+		 */
+		public Set<String> getAliases(){
+			Set<String> result = new HashSet<String>();
+			result.add(aliasName);
 			for (OperationBlock op : ops)
-				if (op.aliasName != null)
-					result.add(op.aliasName);
+				result.add(op.aliasName);
+			result.remove(null);
 			return result;
 		}
 	}

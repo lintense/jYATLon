@@ -35,6 +35,13 @@ INTERESTINGLY...
 	- To generate the Root interface...
 
 -=-=-
+A a nicer syntax for paths:
+
+../PATH(test='value') --> {{PATH.name}} // Could be multi-line
+
+	
+	
+-=-=-
 Have a test case with the Alias asked before it is actualy defined
 
 {begin X}

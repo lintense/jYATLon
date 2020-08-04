@@ -33,7 +33,7 @@ class AppTest {
 	@Test
 	void testParsing1() throws IOException {
 		String s = " === String ===\n\n\n" +
-				" a b### {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
+				" a b%%% {}[begin]~c {{if ((($.name) == $.val.val2(1,2.3).val2) || $.name() == $.val || $.name == $._val(1)) call .../String ($:ROOT.name(('test')):ALIAS)}}x{begin X}yz\n";
 		String testName = showTestHeader("testParsing1");
 		Template t = App.getTemplate(s);
 		String obtained = getStructAsString(testName, t);
@@ -78,5 +78,22 @@ class AppTest {
 		YATL.fromString(templateContent).merge(root, w);
 		return w.toString();
 	}
+/* Stuff to be tested - someday
+ * 
+Alias must exist
+{{Alias3}}
+{{$.block:Alias3}}
 
+{{Alias2}}
+{{$.block:Alias3}}
+
+Invalid reference
+{{block}}
+
+Alias to a string
+{{'te"st1':Alias1}}{{"te'st2"}}
+
+Calling any path
+{{call .../Terminal $.block}}
+ */
 }

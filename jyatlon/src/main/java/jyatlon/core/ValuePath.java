@@ -2,7 +2,6 @@ package jyatlon.core;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -56,19 +55,34 @@ public class ValuePath {
 	public Object getObject() {
 		return objects[objects.length - 1];
 	}
+	public Object getObject(String name) {
+		for (int i = classes.length; i > 0; i--)
+			if (name.equals(classes[i-1]) || name.equals(aliases[i-1]))
+				return objects[i-1];
+		throw new IllegalArgumentException("The name '" + name + "' cannot be found in the path");
+	}
 	public String getAlias() {
 		return aliases[aliases.length - 1];
 	}
-	private Object getValueForName(String valueArg) { // TODO not used
-		// Aliases have precedence over classes because we can choose them!
-		OptionalInt opt1 = IntStream.range(0, aliases.length).filter(i -> aliases[i].equals(valueArg)).findAny();
-		if (opt1.isPresent())
-			return objects[opt1.getAsInt()];
-		OptionalInt opt2 = IntStream.range(0, classes.length).filter(i -> classes[i].equals(valueArg)).findAny();
-		if (opt2.isPresent())
-			return objects[opt1.getAsInt()];
-		
-		throw new IllegalArgumentException("The name '" + valueArg + "' does not exist in the current scope.");
+	public String getClassName() {
+		return classes[classes.length - 1];
+	}
+//	private Object getValueForName(String valueArg) { // TODO not used
+//		// Aliases have precedence over classes because we can choose them!
+//		OptionalInt opt1 = IntStream.range(0, aliases.length).filter(i -> aliases[i].equals(valueArg)).findAny();
+//		if (opt1.isPresent())
+//			return objects[opt1.getAsInt()];
+//		OptionalInt opt2 = IntStream.range(0, classes.length).filter(i -> classes[i].equals(valueArg)).findAny();
+//		if (opt2.isPresent())
+//			return objects[opt1.getAsInt()];
+//		
+//		throw new IllegalArgumentException("The name '" + valueArg + "' does not exist in the current scope.");
+//	}
+	public boolean hasClassName(String className) {
+		return Arrays.stream(this.classes).anyMatch(x -> className.equals(x));
+	}
+	public boolean hasAlias(String alias) {
+		return Arrays.stream(this.aliases).anyMatch(x -> alias.equals(x));
 	}
 //	public String getPathName() {
 //		return String.join(ValuePath.SEPARATOR, classes);

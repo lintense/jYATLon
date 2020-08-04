@@ -248,18 +248,18 @@ T0 // This is the normal text for this document
 - Where and when the `{call}` command is placed is as important as the command itself when determining *the placement* of the final text.
 
 #### <a id="comment"></a>Comment, Escape & Ignore
-- A comment begins with `###`. A comment terminates at the end of the line or when another `###` is encountered.
+- A comment begins with `%%%`. A comment terminates at the end of the line unless another `%%%` is encountered.
 ```javascript
-123### // Will output 123 without a new line
-123###456### // Will output 123 WITH a new line (and this java comment!!!)
+123%%% // Will output 123 without a new line
+123%%%456%%% // Will output 123 WITH a new line (and this java comment!!!)
 ```
 - The **escape** character `~` will make any immediately following character, including itself, to be treated as normal text. This is the only character that always needs to be escaped.
 - Whenever possible, the engine will try to escape the invalid char sequences for you.
 ```javascript
-~{begin test~}### // Will output {begin test} (without this comment!)
+~{begin test~}%%% // Will output {begin test} (without this comment!)
 ```
-- An empty line immediately before or after a [path block](#path) header **will be ignored**.
-- When a line ends with a `{control}` or a `{call}` the immediately following new line **will be ignored**.
+- An empty line immediately before or after a [path block](#path) header **is ignored**.
+- When a line ends with a `{control}` the immediately following new line **is ignored**.
 ```javascript
 {begin ALIAS} 
 {{ALIAS}} // No new line added before the value!

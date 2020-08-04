@@ -180,7 +180,7 @@ SPACE			: ( ' ' | '\t' ) ;
 EQUAL			: '=' ;
 SECTIONSEP		: EQUAL EQUAL EQUAL ;
 POUND			: '#' ;
-COMMENTSEP		: POUND POUND POUND ;
+COMMENTSEP		: PERCENT PERCENT PERCENT ;
 PIPE			: '|' ;
 OR				: PIPE PIPE ;
 AMP				: '&' ;
