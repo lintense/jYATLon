@@ -95,5 +95,13 @@ Alias to a string
 
 Calling any path
 {{call .../Terminal $.block}}
+
+Invalid numbers
+{{if 986573498657983673 <= s986573498657983674  '3'}} %%% Should be rejected!
+
+{{if !'"'.isEmpty '!Empty'}} %%%  Causes a new EmptyStackException !!!
+{{'test':Alias10.toString:Alias11}}
+{{if !'true'=='false' '2'}}
+{{call .../Terminal $.block:Alias3}}
  */
 }

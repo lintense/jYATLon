@@ -47,8 +47,12 @@ import jyatlon.generated.YATLLexer;
  */
 public class BlockBuilder {
 	
+	public static final String QUOTES = "\"''\"";
 	public static final String HIDDEN_HEADER = "=$=\n";
 	public static final String ROOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT));
+	public static final String NOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NOT));
+	public static final String MINUS = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.MINUS));
+	
 	
 	private static String getStructText(String fullText, Struct s) {
 		return fullText.substring(s.from, s.to);
@@ -86,11 +90,15 @@ public class BlockBuilder {
 		// A value expression always starts with any of: the root context, a path or an alias.
 		// Reason: To help the user, no implicit value.
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
-			if (!(BlockBuilder.ROOT.equals(vb.argName)
-			|| (pb.path != null && pb.path.path.containsClassName(vb.argName))
-			|| Utils.isString(vb.argName)
-			|| aliasForPathBlock.get(pb).contains(vb.argName))) // TODO should use Sets instead of a Lists...
+			if (!isReferenceValidValueBlock(vb, pb, aliasForPathBlock))
 				throw new BlockBuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
+
+			// Validate sub values inside test block
+			if (vb.test != null)
+				for (BinaryTestBlock bt : vb.test.exp)
+					for (ValueBlock subvb : bt.values)
+						if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
+							throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 		}));
 		
 		// Compute the destination of each value call blocks
@@ -127,6 +135,13 @@ public class BlockBuilder {
 		System.out.println("Completed in " + (t2-t1) + " milliseconds.");
 		
 		return pathBlocks;
+	}
+	private static boolean isReferenceValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
+		return BlockBuilder.ROOT.equals(vb.argName)
+		|| (pb.path != null && pb.path.path.containsClassName(vb.argName))
+		|| Utils.isString(vb.argName, BlockBuilder.QUOTES)
+		|| Utils.isNumber(vb.argName)
+		|| aliasForPathBlock.get(pb).contains(vb.argName);
 	}
 	/**
 	TODO Validate all the destinations for compatibility

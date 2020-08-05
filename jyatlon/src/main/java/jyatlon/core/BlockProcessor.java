@@ -100,7 +100,7 @@ public class BlockProcessor {
 	private static boolean isDefined(ValueBlock vb, ValuePath vp, Set<String> alreadyDefinedAliases) {
 		return BlockBuilder.ROOT.equals(vb.argName) 
 				|| alreadyDefinedAliases.contains(vb.argName)
-				|| Utils.isString(vb.argName)
+				|| Utils.isString(vb.argName, BlockBuilder.QUOTES)
 				|| vp.containsClassName(vb.argName)
 				|| vp.containsAliasName(vb.aliasName);
 	}
@@ -245,30 +245,77 @@ public class BlockProcessor {
 			return true;
 		}
 	}
+	private static boolean computeBooleanValue(ValueBlock vb, List<ValuePath> paths) {
+		ValuePath vp = getMatchingPath(vb.valuePath, paths);
+		Object o = vp.getObject();
+		boolean b = o != null && Boolean.valueOf(o.toString());
+		return BlockBuilder.NOT.equals(vb.unaryOp) ? !b : b;
+	}
+	private static double computeDoubleValue(ValueBlock vb, List<ValuePath> paths) {
+		ValuePath vp = getMatchingPath(vb.valuePath, paths);
+		Object o = vp.getObject();
+		return o != null ? Double.parseDouble(o.toString()) : 0d;
+	}
 	// NOT EQUAL | EQUAL EQUAL | '>' | '>' EQUAL | '<' | '<' EQUAL | '<>'
 	private static boolean computeTest(BinaryTestBlock test, List<ValuePath> paths, Matcher matcher) {
-		ValueBlock vb1 = test.values.get(0); // FIXME to be extended
-		ValuePath vp1 = getMatchingPath(vb1.valuePath, paths);
-		ValueBlock vb2 = test.values.get(1);
-		ValuePath vp2 = getMatchingPath(vb2.valuePath, paths);
 		
+		// Single value, must be boolean
+		ValueBlock vb1 = test.values.get(0); // FIXME to be extended
+		if (test.op == null)
+			return computeBooleanValue(vb1, paths);
+		
+		// One value starts with a not, so both considered boolean
+		ValueBlock vb2 = test.values.get(1);
+		if (BlockBuilder.NOT.equals(vb1.unaryOp) || BlockBuilder.NOT.equals(vb2.unaryOp)) {
+			boolean b1 = computeBooleanValue(vb1, paths);
+			boolean b2 = computeBooleanValue(vb2, paths);
+			if ("==".equals(test.op))
+				return b1 == b2;
+			else if ("!=".equals(test.op) || "<>".equals(test.op))
+				return b1 != b2;
+			else
+				throw new IllegalStateException("invalid operator " + test.op + " for boolean.");
+			
+		}
+		
+		ValuePath vp1 = getMatchingPath(vb1.valuePath, paths);
+		Object o1 = vp1.getObject();
+		ValuePath vp2 = getMatchingPath(vb2.valuePath, paths);
+		Object o2 = vp2.getObject();
 		if ("==".equals(test.op))
-			return matcher.isSameObject(vp1.getObject(), vp2.getObject());
+			return matcher.isSameObject(o1, o2);
 		else if ("!=".equals(test.op) || "<>".equals(test.op))
-			return !matcher.isSameObject(vp1.getObject(), vp2.getObject());
-		throw new IllegalStateException("Binary operator " + test.op + " is not yet implemented");
+			return !matcher.isSameObject(o1, o2);
+
+		// Number comparison
+		double d1 = computeDoubleValue(vb1, paths);
+		double d2 = computeDoubleValue(vb2, paths);
+		if (">".equals(test.op))
+			return d1 > d2;
+		else if (">=".equals(test.op))
+			return d1 >= d2;
+		else if ("<".equals(test.op))
+			return d1 < d2;
+		else if ("<=".equals(test.op))
+			return d1 <= d2;
+
+		// Unknown comparison
+		throw new IllegalStateException("unknown binary operation " + test.op);
+
 	}
 	private static void writeBlock(TextBlock tb, Writer w) throws IOException {
 		w.append(tb.text);
 	}
 	private static List<ValuePath> computeValues(ValueBlock vb, ValuePath vp, Map<String,Status> statuses) {
 		// Init value object
-		if (vb.unaryOp != null)
-			throw new IllegalStateException("unaryOp not yet implemented"); // FIXME To be implemented
+//		if (vb.unaryOp != null)
+//			throw new IllegalStateException("unaryOp not yet implemented"); // FIXME To be implemented
 		
 		Object obj;
-		if (Utils.isString(vb.argName))
-			obj = vb.argName;
+		if (Utils.isString(vb.argName, BlockBuilder.QUOTES))
+			obj = Utils.unquote(vb.argName);
+		else if (BlockBuilder.MINUS.equals(vb.unaryOp) || Utils.isNumber(vb.argName))
+			obj = BlockBuilder.MINUS.equals(vb.unaryOp) ? -Double.parseDouble(vb.argName) : Double.parseDouble(vb.argName);
 		else
 			obj = vp.getObjectForName(vb.argName);
 		

@@ -14,10 +14,8 @@ public class Utils {
 		c[0] = Character.toLowerCase(c[0]);
 		return new String(c);
 	}
-	public static String unquote(String quotedString) {
-		return quotedString.charAt(0) == quotedString.charAt(quotedString.length()-1)
-			? quotedString.substring(1, quotedString.lastIndexOf(quotedString.charAt(0)))
-			: quotedString;
+	public static String unquote(String s) {
+		return s != null ? s.substring(1, s.length()-1) : s;
 	}
 	public static URL getResourceURL(String res) {
 		return Utils.class.getClassLoader().getResource(res);
@@ -34,8 +32,16 @@ public class Utils {
 	public static String pathToString(java.nio.file.Path path) throws IOException {
 		return new String(Files.readAllBytes(path));
 	}
-	public static boolean isString(String s) {
-		return (s.startsWith("'") && s.endsWith("'")) || (s.startsWith("\"") && s.endsWith("\""));
+	public static boolean isString(String s, String quotes) {
+		int len = s != null ? s.length() : -1;
+		return len > 1 && quotes.indexOf(s.charAt(0)) == quotes.length() - quotes.lastIndexOf(s.charAt(len-1)) - 1;
+	}
+	public static boolean isNumber(String s) {
+		return s != null && Character.isDigit(s.charAt(0))
+				? (s.indexOf('.') >= 0
+					? Double.toString(Double.parseDouble(s)).equals(s)
+					: Long.toString(Long.parseLong(s)).equals(s))
+				: false;
 	}
 	
 //	public static InputStream urlToStream() throws FileNotFoundException {
