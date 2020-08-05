@@ -36,13 +36,13 @@ yatl.merge(root, writer); // The same as Velocity!
 
 #### <a id="root"></a>Root context
 - The root context aka `$` refers to the object that is provided when launching the template engine. (See [running the program](#running) above)
-- It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL will not implement complex computations...
+- It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL **do not** and **will not** implement complex computations...
 
 #### <a id="value"></a>Value
 - A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](https://mustache.github.io/)!
 - It can be a constant: `{{'any text'}}` or `{{"I'm a text!"}}`
 - The result of a value expression is always inserted where it is declared.
-- A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any **public** methods that is valid for this object and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
+- A value expression always starts with any of: the [root context](#root), a [path](#path) or an [alias](#alias). From there, it is possible to apply any **public** methods or fields and so on. For exemple you can do `{{$.toString}}` or `{{$.toString.substring(1,4)}}`.
 - You can invoke public accessors with `{{$.getSize()}}` or `{{$.getSize}}` or even `{{$.size}}` as you prefer.
 - You can use a Map key to access one of its value `{{Map.key}}`.
 - If you want to insert any text depending on a value, for example when it is empty or when it is a collection, then assign an [alias](#alias) to this value and enclose it in a [block](#block).
@@ -74,8 +74,9 @@ Root, Alias                 // Well... those are the aliases!
 - `Collection` functions may be used inside a condition: `{{if indexOf(ALIAS) == 1 'First:'}}`.
 
 #### <a id="block"></a>Block
+- A block is always associated to a single [alias](#alias).
 - A block always begins with `{begin ALIAS}` and always ends with `{end ALIAS}`.
-- A block is always associated to a single [alias](#alias). Its role is to control the visibilty of the text **surrounding** the [values](#value) containing this [alias](#alias).
+- Its role is to control the visibilty of the text **surrounding** the [values](#value) containing this [alias](#alias).
 ```javascript
 {begin ALIAS} // The most simple block!
     {{$.val:ALIAS}}
@@ -96,7 +97,8 @@ Root, Alias                 // Well... those are the aliases!
 - All associated [alias](#alias) expressions **MUST** be declared **directly** under the `{begin ALIAS}` control.
 ```javascript
 {begin ALIAS}
-{{ALIAS}} // Value Expression: always directly under {begin} 
+intro     // This text always appears.
+{{ALIAS}} // Value Expression only allowed directly under {begin}.
 {before ALIAS}
 x = new List(" // Text to appear once, before the first value.
 {between ALIAS}
