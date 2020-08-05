@@ -29,7 +29,10 @@ import jyatlon.core.Block.ValueBlock;
 /**
  * @author linte
  * SRP: A state less processor that generate a text file.
- *
+ * TODO : Collection
+ * TODO : Revise doc for missing stuff
+ * TODO : Write a Dev Guide
+ * TODO : Do we still need the statuses?
  */
 public class BlockProcessor {
 
@@ -56,7 +59,6 @@ public class BlockProcessor {
 	}
 	private static void writeBlock(ControlBlock cb, Writer w, Matcher matcher, ValuePath vp, Map<String,Status> statuses) throws IOException {
 		
-//		Object r = vp.getObject();
 		// For this control block, iterate through all the values and their ops
 		// for each op, collect all the result and their associated alias path
 		
@@ -95,38 +97,23 @@ public class BlockProcessor {
 		for (String s : strings)
 			w.append(s);
 	}
-	
-//	if (!(BlockBuilder.ROOT.equals(vb.argName)
-//	|| (pb.path != null && pb.path.path.hasClass(vb.argName))
-//	|| Utils.isString(vb.argName)
-//	|| aliasForPathBlock.get(pb).contains(vb.argName))) // TODO should use Sets instead of a Lists...
-
 	private static boolean isDefined(ValueBlock vb, ValuePath vp, Set<String> alreadyDefinedAliases) {
 		return BlockBuilder.ROOT.equals(vb.argName) 
 				|| alreadyDefinedAliases.contains(vb.argName)
 				|| Utils.isString(vb.argName)
-				|| vp.hasClassName(vb.argName)
-				|| vp.hasAlias(vb.aliasName);
+				|| vp.containsClassName(vb.argName)
+				|| vp.containsAliasName(vb.aliasName);
 	}
-
 	private static List<String> writeBlock(ControlOperator co, Matcher matcher, ValuePath vp, Map<String,Status> statuses) throws IOException {
-		
-//		Object r = vp.getObject();
-//		paths.forEach(p->System.out.println(Arrays.toString(p.aliases)));
 
-		// Iterate begin control
+		// Compute all the possible values.
 		int control = 0; // Ensure this process will end some day!
 		List<List<ValuePath>> allValueCtx = new ArrayList<List<ValuePath>>(); // One element per ValueBlock
 		LinkedList<ValueBlock> toProcess = new LinkedList<>(co.getValues());
-		while (!toProcess.isEmpty() && control < toProcess.size()) { // FIXME Try to avoid this kind of processing here!!!
+		while (!toProcess.isEmpty() && control < toProcess.size()) {
 			ValueBlock vb = toProcess.removeFirst();
 			
-			// FIXME It is logical we want to process all the defining value first.
-			// This is because we do not want to skip these values inside the computeValues() process
-			// Speaking of which, should we have a collection of all found aliases so we can process them all at that place?
-			
 			// If ValueBlock starts by an alias that has not been processed yet then we must delay its processing to the end
-			
 			if (isDefined(vb, vp, statuses.keySet())) {
 				control = 0;
 				allValueCtx.add(computeValues(vb, vp, statuses));
@@ -134,39 +121,34 @@ public class BlockProcessor {
 				control++;
 				toProcess.addLast(vb);
 			}
-			
-			// For now only use the root object
-			
 		}
-		// 
-		if (toProcess.size() > 0) // This is bad... Maybe we could keep it but at least ensure it will terminate && without crash!!!
+		// Some value cannot be processed. This should not happen.
+		// Add the required validations inside BlockBuilding class to avoid an error here!
+		if (toProcess.size() > 0)
 			throw new IllegalStateException("Cannot process undefined value: " + toProcess.get(0).argName); // FIXME AVoid this at any cost. This should be validated in the BlockBuilder phase.
 		
-		
-		
+		// Create all the possible 'valid' combinations. TODO Collections
 		// The whole control block must be repeated in case there are multiple value path...
 		// Here we must find which combination of values must be shown simultaneously
 		// All possible combinations must be shown
 		// When the value are independent (not sharing aliases) then its a product,
 		
 		// Each matrix entry is (a priori) multiplied with each other
-		// 1,2 x 3,4 = 13, 14, 23, 24
-		
-		// Wrong: should be 1,2 x 3,4 = 1,2,3,4
+		//  1,2 x 3,4 = 1,2,3,4
 		// When intersecting: 1,2 x 2,3 = 1,2,3
 		
 		// Combine a lists
-		// When do we need to dedup the lists? In case of collections!
+		// When do we need to duplicate the lists? In case of collections!
 		// When to scrap a list? When the aliases are not matching!
 		
 		List<List<ValuePath>> allCombinations = new ArrayList<>();
 		
-		// For now, its seems to exist only one combination...
+		// FIXME For now, its seems to exist only one combination...
 		Map<String,Object> combinedAliases = new HashMap<>();
 		List<ValuePath> combinedCtx = new ArrayList<>(); 
 		LOOP: for (List<ValuePath> valueCtx : allValueCtx) {
 			
-			// Validate new valueCtx combination
+			// Validate new valueCtx combination. TODO Easy to shrink code...
 			for (ValuePath pathCtx : valueCtx) {
 				for (int i = 0; i < pathCtx.aliases.length; i++) {
 					if (pathCtx.aliases[i] != null) {
@@ -183,32 +165,12 @@ public class BlockProcessor {
 			}
 			combinedCtx.addAll(valueCtx);
 		}
-
 		if (!combinedCtx.isEmpty())
 			allCombinations.add(combinedCtx);
-		
-		
-		
-		
-//		// Previous version - Bad!
-//		List<List<ValuePath>> m = new ArrayList<List<ValuePath>>();
-//		m.add(new ArrayList<ValuePath>());
-//		for (List<ValuePath> l : allValueCtx) {
-//			List<List<ValuePath>>  newm = new ArrayList<List<ValuePath>>();
-//			for (ValuePath p : l) {
-//				for (List<ValuePath> mm : m) {
-//					List<ValuePath> mmm = new ArrayList<ValuePath>(mm);
-//					mmm.add(p);
-//					newm.add(mmm);
-//				}
-//			}
-//			m = newm;
-//		}
-		
+
 		// Iterate all combinations
 		StringWriter sw = new StringWriter();
 		List<String> result = new ArrayList<>();
-		
 		if (allCombinations.isEmpty()) { // Give a chance to inner controls to run once
 			for (Block b : co.blocks) {
 				
@@ -225,17 +187,6 @@ public class BlockProcessor {
 			sw.getBuffer().setLength(0);
 		} else { // Iterate combinations
 			for (List<ValuePath> mm : allCombinations) {
-			
-			// When they share aliases, they must be compatible
-//			mm.forEach(p->System.out.println(Arrays.toString(p.aliases)));
-
-			// In case of collisions, check compatibility
-			// This means that each alias must have the same value (must be the same object)
-//			Map<String,Object> aliasObjects = new HashMap<String,Object>();
-//			boolean incompatible = mm.stream().anyMatch(p->!canAddAliasObjectToMap(aliasObjects, p, matcher));
-//		
-//			if (!incompatible) {
-				
 				for (Block b : co.blocks) {
 					
 					if (b.isText())
@@ -253,31 +204,7 @@ public class BlockProcessor {
 		}
 		return result;
 	}
-//	private static boolean canAddAliasObjectToMap(Map<String, Object> aliasObjects, ValuePath p, Matcher matcher) {
-//		for (int i = 0; i < p.aliases.length; i++) {
-//			if (p.aliases[i] != null) {
-//				Object newObj = p.objects[i];
-//				Object previousObj = aliasObjects.put(p.aliases[i], newObj);
-//				if (previousObj != null && !matcher.isSameObject(newObj, previousObj))
-//					return false;
-//			}
-//		}
-//		return true;
-//	}
 	private static void writeBlock(ValueBlock vb, Writer w, List<ValuePath> paths, Matcher matcher, ValuePath vp) throws IOException {
-		// Current value path
-//		ValuePath current = vb.getPath();
-		
-		// Find which path element is matching the current value
-//		boolean found = false;
-//		Object o = null;
-//		FIND_PATH: for (ValuePath path : paths) {
-//			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) { // FIXME use stream
-//				found = true;
-//				o = path.getObject();
-//				break FIND_PATH;
-//			}
-//		}
 		
 		boolean test = computeTest(vb.test, paths, matcher);
 		if (test) {
@@ -286,9 +213,9 @@ public class BlockProcessor {
 				Object o = foundPath.getObject();
 				if (vb.call == null)
 					w.append(o.toString());
-				else {// TODO called path must match actual object class or interface
+				else { // TODO called path must match actual object class or interface?
 					PathBlock pb = vb.call.getBlockToCall();
-					writeBlock(vb.call.getBlockToCall(), w, matcher, vp.add(pb.path.path.getClassName(), pb.path.path.getAlias(), o));
+					writeBlock(vb.call.getBlockToCall(), w, matcher, vp.add(pb.path.path.getClassName(), pb.path.path.getAliasName(), o));
 				}
 			} else if (foundPath == null)
 				throw new IllegalStateException("Path not found for current value!"); // FIXME should this ever happen?
@@ -298,7 +225,7 @@ public class BlockProcessor {
 		// Find which path element is matching the current value
 		// TODO seem a bit restrictive. i.e.Null alias should match
 		for (ValuePath path : paths)
-			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases)) // FIXME use stream
+			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases))
 				return path;
 		return null;
 	}
@@ -322,12 +249,8 @@ public class BlockProcessor {
 	private static boolean computeTest(BinaryTestBlock test, List<ValuePath> paths, Matcher matcher) {
 		ValueBlock vb1 = test.values.get(0); // FIXME to be extended
 		ValuePath vp1 = getMatchingPath(vb1.valuePath, paths);
-//		if (vp1 == null)
-//			throw new IllegalStateException("Left value not found"); // Should not happen
 		ValueBlock vb2 = test.values.get(1);
 		ValuePath vp2 = getMatchingPath(vb2.valuePath, paths);
-//		if (vp2 == null)
-//			throw new IllegalStateException("Right value not found"); // Should not happen
 		
 		if ("==".equals(test.op))
 			return matcher.isSameObject(vp1.getObject(), vp2.getObject());
@@ -347,12 +270,11 @@ public class BlockProcessor {
 		if (Utils.isString(vb.argName))
 			obj = vb.argName;
 		else
-			obj = vp.getObject(vb.argName);
+			obj = vp.getObjectForName(vb.argName);
 		
 		// FIXME When the value argName IS the current alias then we
 		// must find a way to access ALL the already defined alias values
 		// This is because we need to evaluate the further operations...
-		
 		
 		// Maybe it is not a problem since empty list and null object are both considered empty and as such are treated the same way.
 		if (obj == null) {

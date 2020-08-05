@@ -43,7 +43,7 @@ import jyatlon.generated.YATLLexer;
  * Block is the actual structure that is to be processed by the template.
  * 
  * TODO all methods should be static to ensure thread safety (ok)
- * 
+ * TODO : Missing some validations
  */
 public class BlockBuilder {
 	
@@ -87,7 +87,7 @@ public class BlockBuilder {
 		// Reason: To help the user, no implicit value.
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
 			if (!(BlockBuilder.ROOT.equals(vb.argName)
-			|| (pb.path != null && pb.path.path.hasClassName(vb.argName))
+			|| (pb.path != null && pb.path.path.containsClassName(vb.argName))
 			|| Utils.isString(vb.argName)
 			|| aliasForPathBlock.get(pb).contains(vb.argName))) // TODO should use Sets instead of a Lists...
 				throw new BlockBuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
@@ -175,7 +175,7 @@ public class BlockBuilder {
 	private static PathBlock getRelativePathBlockToCall(Map<String,PathBlock> pathBlocks, CallBlock newCB) {;
 		// If relative then gather all compatible destinations
 		// start by the full call path
-		final String currentCallAlias = newCB.path.getAlias();
+		final String currentCallAlias = newCB.path.getAliasName();
 		List<PathBlock> result =  new ArrayList<PathBlock>();
 		List<PathBlock> resultWithAlias =  new ArrayList<PathBlock>();
 
@@ -190,7 +190,7 @@ public class BlockBuilder {
 						&& IntStream.range(0, dest.length).allMatch(i->dest[i].equals(caller[caller.length - dest.length + i]))) {
 					// dest = .../X/Y/Z, caller = .../W/X/Y/Z
 					result.add(pb2);
-					if (currentCallAlias != null && currentCallAlias.equals(pb2.path.path.getAlias()))
+					if (currentCallAlias != null && currentCallAlias.equals(pb2.path.path.getAliasName()))
 						resultWithAlias.add(pb2);
 				}
 			}
@@ -224,8 +224,6 @@ public class BlockBuilder {
 		
 		// Process path
 		CallBlock cp = parsePathExp(section.pathExp);
-		
-//		Map<Section,List<Line>> sectionLines = new HashMap();
 		if (section.line == null)
 			return new PathBlock(cp == null ? ROOT : cp.name, cp, Collections.emptyList(), section.from);
 
@@ -240,7 +238,6 @@ public class BlockBuilder {
 		if (last > first && lines.get(last-1).lineExp == null)
 			last--;
 		lines = lines.subList(first, last);
-//		sectionLines.put(section, lines);
 				
 		// Process lines
 		List<Block> blocks = parseLines(fullText, lines);
@@ -248,7 +245,6 @@ public class BlockBuilder {
 		
 		// Compute value blocks
 		ControlBlock cb = extractControlBlock(new ControlBlock(pb, pb.from), blocks.iterator());
-//		cb.setValues(extractControlValues(cb));
 		pb.init(cb);
 		
 		return pb;
@@ -319,7 +315,6 @@ public class BlockBuilder {
 				
 				// Something left in buffer, add it in text block
 				if (buffer.length() > 0) { 
-//					int textPos = lines.get(lines.size()-1).to-buffer.length();
 					int textPos = line.lineExp.get(line.lineExp.size()-1).to-buffer.length();
 					result.add(new TextBlock(buffer.toString(), textPos));
 					buffer.setLength(0);
@@ -328,16 +323,10 @@ public class BlockBuilder {
 				if (!result.peek().isControlOperator() && !insideComment.get())
 					result.add(new TextBlock(System.lineSeparator(), line.from));
 				
-//				if (!result.isEmpty() && !insideComment.get()) {
-//					if (result.peek().isControlOperator() && buffer.toString().trim().isEmpty())
-//						buffer.setLength(0);
-//				}
-
 			} else // Empty line
 				result.add(new TextBlock(System.lineSeparator(), line.from));
-//				buffer.append(System.lineSeparator());
 			
-		}); // line
+		}); // end line processing
 
 		return result;
 	}
@@ -363,12 +352,6 @@ public class BlockBuilder {
 					throw new BlockBuildingError("missing control {begin:" + co.aliasName + "}", co.from) ;
 			} else 
 				currentControl.addBlock(b);
-//			else if (b.isValue())
-//				throw new IllegalStateException("Value not into {begin:" + currentBlock.aliasName + "}") ;
-//			else if (b.isText())
-//				currentBlock.addBlock(b);
-//			else
-//				throw new IllegalStateException("Cannot insert " + b.getClass().getSimpleName() + " into ControlBlock");
 		}
 		if (currentBlock.isSectionBlock())
 			return currentBlock;
@@ -378,17 +361,16 @@ public class BlockBuilder {
 		// My alias MUST be defined at least once
 		// Also the defining block should/could be flagged to be processed first!
 		
-		
 		// Validate that all the control operators (except begin) do not reference the control alias.
 		// FIXME error message must be clearer
 		if (cb.before != null && cb.before.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid reference in {before " + cb.aliasName + "}", cb.before.from);
+			throw new BlockBuildingError("invalid alias reference in {before " + cb.aliasName + "}", cb.before.from);
 		if (cb.between != null && cb.between.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid reference in {between " + cb.aliasName + "}", cb.between.from);
+			throw new BlockBuildingError("invalid alias reference in {between " + cb.aliasName + "}", cb.between.from);
 		if (cb.after != null && cb.after.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid reference in {after " + cb.aliasName + "}", cb.after.from);
+			throw new BlockBuildingError("invalid alias reference in {after " + cb.aliasName + "}", cb.after.from);
 		if (cb.empty != null && cb.empty.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid reference in {empty " + cb.aliasName + "}", cb.empty.from);
+			throw new BlockBuildingError("invalid alias reference in {empty " + cb.aliasName + "}", cb.empty.from);
 
 		// TODO Validate all aliases used everywhere are defined in block parents... 
 	
@@ -396,21 +378,26 @@ public class BlockBuilder {
 	}
 	private static ValueBlock parseValue(Value value) {
 		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseLogicalTestBlock(value.ifExp), value.from);
-		if (result.call != null && !result.call.isValidForValue())
+		if (result.call != null && !isValidForValue(result.call)) // TODO Why is that so?
 			throw new BlockBuildingError("alias only allowed at the end of a call in " + result.call.name, result.from);
 		return result;
+	}
+	private static boolean isValidForValue(CallBlock cb) {
+		// Only the last alias is allowed in a value block call block
+		return cb.path.aliases.length > 0 && IntStream.range(0, cb.path.aliases.length - 1).allMatch(a->cb.path.aliases[a] == null);
 	}
 	private static LogicalTestBlock parseLogicalTestBlock(IfExp exp) {
 		if (exp == null)
 			return null;
 		List<BinaryTestBlock> ops = exp.logicalExp.binaryExp.stream().map(x -> parseBinaryTestBlock(x)).collect(Collectors.toList());
 		if (exp.logicalExp.logicalOp != null) {
-			// TODO Validation: All logical ops must be equals
+			// Validation: Only one operator allowed.
+			// TODO Allow inner logical test block inside parenthesis
 			if (exp.logicalExp.logicalOp.stream().distinct().limit(2).count() != 1)
 				throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalExp.logicalOp, exp.from);
 			return new LogicalTestBlock(exp.logicalExp.from, ops, exp.logicalExp.logicalOp.get(0));
 		} else if (ops.size() == 1)
-			return new LogicalTestBlock(exp.logicalExp.from, ops, "&&"); // default to AND
+			return new LogicalTestBlock(exp.logicalExp.from, ops, "&&"); // defaults to AND
 		else
 			throw new IllegalStateException("Case not allowed by grammar");
 	}
@@ -436,13 +423,8 @@ public class BlockBuilder {
 		return result;
 	}
 	private static ControlOperator parseControlExp(ControlExp ce) {
-//		ControlExp ce = lineExp.controlExp;
-//		ControlBlock[] array = controls.getOrDefault(ce.aliasName, new ControlBlock[MAX_CONTROL]);
-//		int i = extractControlId(ce.controlOp);
 		// TODO Validate order
 		// TODO Validate not already filled
-//		array[i] = ce;
-//		controls.put(ce.aliasName, array);
 		int operationId = ControlBlock.extractControlId(ce.controlOp);
 		boolean isEndOfBlock = operationId == ControlBlock.CONTROL_END;
 		return new ControlOperator(isEndOfBlock, ce.aliasName, operationId, ce.from);

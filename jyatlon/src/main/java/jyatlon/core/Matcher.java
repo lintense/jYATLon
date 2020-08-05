@@ -7,6 +7,6 @@ public class Matcher {
 		if (o1 == null || o2 == null)
 			return false;
 		return o1.toString().equals(o2.toString());
-		// Collections... FIXME
+		// FIXME Implement Collections... 
 	}
 }

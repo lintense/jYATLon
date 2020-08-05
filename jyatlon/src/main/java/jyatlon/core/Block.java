@@ -6,15 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 
 /**
  * @author linte
- * SRP Data structure that holds all the compiles template infos.
- * This class should be a data structure, logic should not be placed here!
- * This object is build by: BlockBuilder
- * This object is processed by: BlockProcessor
+ * SRP Data structure that holds all the compiled template infos.
+ * This class is a data structure, logic should not be placed here!
+ * @see BlockBuilder This object is build by BlockBuilder.
+ * @see BlockProcessor This object is processed by BlockProcessor.
  */
 public abstract class Block {
 	public final int from;
@@ -37,8 +36,8 @@ public abstract class Block {
 
 	public static class ControlBlock extends Block {
 		
-		static final String AVAILABLE_CONTROLS = "        |{begin   |{before  |{between |{after   |{empty   |{end     |prepare  |call     ";
-//		private static final int CONTROL_MAX = AVAILABLE_CONTROLS.length()/10;
+		// Do not change this initialization String
+		static final String AVAILABLE_CONTROLS = "        |{begin   |{before  |{between |{after   |{empty   |{end     |init     |call     ";
 		static final int CONTROLS_WORD_LENGTH = AVAILABLE_CONTROLS.indexOf('|') + 1;
 		
 		static final int CONTROL_BEGIN = extractControlId("begin");
@@ -47,20 +46,19 @@ public abstract class Block {
 		static final int CONTROL_AFTER = extractControlId("after");
 		static final int CONTROL_EMPTY = extractControlId("empty");
 		static final int CONTROL_END = extractControlId("end");
+		
 		static int extractControlId(String controlName) {
 			return AVAILABLE_CONTROLS.indexOf(controlName)/CONTROLS_WORD_LENGTH;
 		}
 		
 		final String aliasName;
 		final Block parent;
-		
 		final ControlOperator begin;
 		ControlOperator before;
 		ControlOperator between;
 		ControlOperator after;
 		ControlOperator empty;
 		ControlOperator end;
-//		List<ControlBlock> subControls;
 		
 		public ControlBlock(PathBlock parent, int from) {
 			super(from);
@@ -71,12 +69,9 @@ public abstract class Block {
 		}
 		public ControlBlock(ControlBlock parent, ControlOperator beginControl, int from){
 			super(from);
-//			this.firstBlockIndex = firstIndex;
 			this.parent= parent;
 			this.aliasName = beginControl.aliasName;
 			this.begin = beginControl;
-			
-//			this.blocks = blocks;
 		}
 		/**
 		 * @param lastIndex
@@ -93,10 +88,6 @@ public abstract class Block {
 			this.end = ops.get(CONTROL_END);
 			return this;
 		}
-//		void addBlock(Block b) {
-//			blocks.add(b);
-//		}
-	
 		boolean isSectionBlock() {
 			return aliasName == null;
 		}
@@ -156,7 +147,6 @@ public abstract class Block {
 		boolean isText() {
 			return true;
 		}
-		
 	}
 	// Do not put logic in this class
 	// When something can be pre-computed, put the result here
@@ -227,7 +217,7 @@ public abstract class Block {
 		}
 		private String computeName() {
 			String result = "";
-			String finalAlias = path.getAlias(); // Only final alias is part of the name
+			String finalAlias = path.getAliasName(); // Only final alias is part of the name
 			for (int i = 0; i < path.classes.length; i++)
 				result += "/" + path.classes[i];
 			return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
@@ -237,10 +227,6 @@ public abstract class Block {
 		}
 		public PathBlock getBlockToCall() {
 			return toCall;
-		}
-		public boolean isValidForValue() {
-			// Only the last alias is allowed in a value block call block
-			return path.aliases.length > 0 && IntStream.range(0, path.aliases.length - 1).allMatch(a->path.aliases[a] == null);
 		}
 	}
 	public static class LogicalTestBlock extends Block { // FIXME To be expanded later

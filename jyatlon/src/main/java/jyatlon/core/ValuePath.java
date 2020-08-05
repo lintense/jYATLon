@@ -8,14 +8,10 @@ import java.util.stream.Stream;
 
 /**
  * @author linte
- * SRP: Hide the implementation of the path mechanism
+ * SRP: Encapsulates all the path mechanisms
  */
 public class ValuePath {
 
-//	private static final String SEPARATOR = File.separator;
-//	private static final String X = Utils.unquote(YATLParser.VOCABULARY.getLiteralName(YATLParser.PATHSEP));
-//	private static final String ANYPATH = Utils.unquote(YATLParser.VOCABULARY.getLiteralName(YATLParser.ANYPATH));
-	
 	// This is a naive implementation
 	public final String[] aliases;
 	public final String[] classes;
@@ -55,63 +51,22 @@ public class ValuePath {
 	public Object getObject() {
 		return objects[objects.length - 1];
 	}
-	public Object getObject(String name) {
+	public Object getObjectForName(String name) {
 		for (int i = classes.length; i > 0; i--)
 			if (name.equals(classes[i-1]) || name.equals(aliases[i-1]))
 				return objects[i-1];
 		throw new IllegalArgumentException("The name '" + name + "' cannot be found in the path");
 	}
-	public String getAlias() {
+	public String getAliasName() {
 		return aliases[aliases.length - 1];
 	}
 	public String getClassName() {
 		return classes[classes.length - 1];
 	}
-//	private Object getValueForName(String valueArg) { // TODO not used
-//		// Aliases have precedence over classes because we can choose them!
-//		OptionalInt opt1 = IntStream.range(0, aliases.length).filter(i -> aliases[i].equals(valueArg)).findAny();
-//		if (opt1.isPresent())
-//			return objects[opt1.getAsInt()];
-//		OptionalInt opt2 = IntStream.range(0, classes.length).filter(i -> classes[i].equals(valueArg)).findAny();
-//		if (opt2.isPresent())
-//			return objects[opt1.getAsInt()];
-//		
-//		throw new IllegalArgumentException("The name '" + valueArg + "' does not exist in the current scope.");
-//	}
-	public boolean hasClassName(String className) {
+	public boolean containsClassName(String className) {
 		return Arrays.stream(this.classes).anyMatch(x -> className.equals(x));
 	}
-	public boolean hasAlias(String alias) {
+	public boolean containsAliasName(String alias) {
 		return Arrays.stream(this.aliases).anyMatch(x -> alias.equals(x));
 	}
-//	public String getPathName() {
-//		return String.join(ValuePath.SEPARATOR, classes);
-//	}
-// The following is not good because duplication is allowed is the objects are the same
-//	public boolean hasDuplicatedAliases() {
-//		Set<String> alreadyFound = new HashSet<String>();
-//		for (String alias : aliases)
-//			if (alreadyFound.contains(alias))
-//				return true;
-//			else
-//				alreadyFound.add(alias);
-//		return false;
-//	}
-//	public int getLastAliasIndex(String alias){
-//		for (int i = aliases.length; i > 0; i--)
-//			if (alias.equals(aliases[i-1]))
-//				return i-1;
-//		return -1;
-//	}
-
-	
-
-//	public static class ValuePath extends Path {
-//
-//		public ValuePath(String pathName, String pathAlias, Object obj) {
-//			super(pathName, pathAlias, obj);
-//			// TODO Auto-generated constructor stub
-//		}
-//		
-//	}
 }
