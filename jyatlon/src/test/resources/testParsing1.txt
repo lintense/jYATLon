@@ -267,6 +267,7 @@ Template@0;
                                                         unaryOp: null;
                                                         valueArg: (String)"$";
                                         from: (Integer)48;
+                                        logicalExp: null;
                                         logicalOp: ArrayList@60;
                                             size: (Integer)2;
                                             0: (String)"||";

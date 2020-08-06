@@ -29,10 +29,13 @@ import jyatlon.core.Block.ValueBlock;
 /**
  * @author linte
  * SRP: A state less processor that generate a text file.
+ * TODO : Do we still need the statuses???
+ * TODO : Processing of 'null'
+ * TODO : Map key access and 'class' key
  * TODO : Collection
  * TODO : Revise doc for missing stuff
- * TODO : Write a Dev Guide
- * TODO : Do we still need the statuses?
+ * TODO : Write a Dev Guide?
+ * TODO : Define Matcher interface and add it as an optional parm
  */
 public class BlockProcessor {
 
@@ -230,20 +233,36 @@ public class BlockProcessor {
 		return null;
 	}
 	// OR | AND
-	private static boolean computeTest(LogicalTestBlock test, List<ValuePath> paths, Matcher matcher) {
+	private static boolean computeTest(LogicalTestBlock test, List<ValuePath> paths, Matcher matcher) { // FIXME this method is too complex... 3 x 2 x 2
 		if (test == null)
 			return true;
-		else if ("||".equals(test.op)) {
-			for (BinaryTestBlock tb : test.exp)
-				if (computeTest(tb, paths, matcher))
-					return true;
-			return false;
-		} else { // "&&" is assumed here
-			for (BinaryTestBlock tb : test.exp)
-				if (!computeTest(tb, paths, matcher))
-					return false;
-			return true;
+		String op = test.op != null ? test.op : "&&";
+		if (test.bexp != null) {
+			if ("||".equals(op)) {
+				for (BinaryTestBlock tb : test.bexp)
+					if (computeTest(tb, paths, matcher))
+						return true;
+				return false;
+			} else if ("&&".equals(op)) {
+				for (BinaryTestBlock tb : test.bexp)
+					if (!computeTest(tb, paths, matcher))
+						return false;
+				return true;
+			}
+		} else if (test.lexp != null) {
+			if ("||".equals(op)) {
+				for (LogicalTestBlock tb : test.lexp)
+					if (computeTest(tb, paths, matcher))
+						return true;
+				return false;
+			} else if ("&&".equals(op)) {
+				for (LogicalTestBlock tb : test.lexp)
+					if (!computeTest(tb, paths, matcher))
+						return false;
+				return true;
+			}
 		}
+		throw new IllegalStateException("invalid operator " + op + " for boolean.");
 	}
 	private static boolean computeBooleanValue(ValueBlock vb, List<ValuePath> paths) {
 		ValuePath vp = getMatchingPath(vb.valuePath, paths);
@@ -349,11 +368,25 @@ public class BlockProcessor {
 		}
 
 		// Compute sub values inside test block
-		if (vb.test != null)
-			for (BinaryTestBlock bt : vb.test.exp)
-				for (ValueBlock subvb : bt.values)
-					result.addAll(computeValues(subvb, vp, statuses));
+		if (vb.test != null) 
+			result.addAll(computeValues(vb.test, vp, statuses));
 		
+		return result;
+	}
+	private static List<ValuePath> computeValues(LogicalTestBlock lbt, ValuePath vp, Map<String,Status> statuses) {
+		List<ValuePath> result = new ArrayList<>();
+		if (lbt.bexp != null)
+			for (BinaryTestBlock bt : lbt.bexp)
+				result.addAll(computeValues(bt, vp, statuses));
+		else if (lbt.lexp != null)
+			for (LogicalTestBlock lt :lbt.lexp)
+				result.addAll(computeValues(lt, vp, statuses));
+		return result;
+	}
+	private static List<ValuePath> computeValues(BinaryTestBlock bt, ValuePath vp, Map<String,Status> statuses) {
+		List<ValuePath> result = new ArrayList<>();
+		for (ValueBlock subvb : bt.values)
+			result.addAll(computeValues(subvb, vp, statuses));
 		return result;
 	}
 	private static ValuePath extractObject(OperationBlock ob, ValuePath p) {

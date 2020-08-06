@@ -4,7 +4,9 @@ package jyatlon.dev;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -81,7 +83,7 @@ public class StructGen {
 			w.append("	public static class " + getStructName(c) + " extends Struct {\n");
 			
 			// Fields
-			Arrays.stream(c.getDeclaredMethods()).filter(m2 -> !m2.getReturnType().getName().equals(c.getName())).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
 				w.append("		final " + toFieldString(m) + ";\n");
 			});
 			
@@ -91,13 +93,13 @@ public class StructGen {
 			// StructBuilder will need to find the constructor but this would be easy since there is only one!
 			w.append("		public " + getStructName(c) + "(int from, int to, ");
 			CommaObj com = new CommaObj();
-			Arrays.stream(c.getDeclaredMethods()).filter(m2 -> !m2.getReturnType().getName().equals(c.getName())).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
 				w.append(com.getComma() + toFieldString(m));
 			});
 			w.append("){\n");
 			w.append("			super(from, to);\n");
 			
-			Arrays.stream(c.getDeclaredMethods()).filter(m2 -> !m2.getReturnType().getName().equals(c.getName())).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
 				w.append("			this." + lowerFirst(getStructName(m.getReturnType())) + " = " + lowerFirst(getStructName(m.getReturnType())) + ";\n");
 			});
 			w.append("		}\n");
@@ -121,7 +123,8 @@ public class StructGen {
 		return Arrays.stream(parserClass.getDeclaredMethods()).anyMatch(m -> isGrammarMethod(m));
 	}
 	private static boolean isGrammarMethod(Method m) {
-		return ParserRuleContext.class.isAssignableFrom(m.getReturnType());
+		return !(m.getParameterCount() == 0 && m.getDeclaringClass().isAssignableFrom(m.getReturnType()))
+				&& ParserRuleContext.class.isAssignableFrom(m.getReturnType());
 	}
 	private static boolean isListMethod(Method m) {
 		return m.getParameterCount() == 1;

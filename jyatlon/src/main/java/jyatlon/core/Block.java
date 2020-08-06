@@ -229,12 +229,14 @@ public abstract class Block {
 			return toCall;
 		}
 	}
-	public static class LogicalTestBlock extends Block { // FIXME To be expanded later
-		public final List<BinaryTestBlock> exp;
+	public static class LogicalTestBlock extends Block {
+		public final List<BinaryTestBlock> bexp;
+		public final List<LogicalTestBlock> lexp;
 		public final String op;
-		public LogicalTestBlock(int from, List<BinaryTestBlock> exp, String op) {
+		public LogicalTestBlock(int from, List<LogicalTestBlock> lexp, List<BinaryTestBlock> bexp, String op) {
 			super(from);
-			this.exp = exp;
+			this.bexp = bexp;
+			this.lexp = lexp;
 			this.op = op;
 		}
 	}

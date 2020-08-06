@@ -66,7 +66,7 @@ callExp
 
 logicalExp
 	: binaryExp (SPACE* logicalOp SPACE* binaryExp)*
-	| '(' SPACE* logicalExp SPACE* ')'
+	| '(' SPACE* logicalExp SPACE* (logicalOp SPACE* logicalExp SPACE*)* ')'
 	;
 
 logicalOp

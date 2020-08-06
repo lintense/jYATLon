@@ -27,6 +27,7 @@ import jyatlon.core.Struct.CallExp;
 import jyatlon.core.Struct.ControlExp;
 import jyatlon.core.Struct.IfExp;
 import jyatlon.core.Struct.Line;
+import jyatlon.core.Struct.LogicalExp;
 import jyatlon.core.Struct.Operation;
 import jyatlon.core.Struct.PathArg;
 import jyatlon.core.Struct.PathExp;
@@ -95,10 +96,11 @@ public class BlockBuilder {
 
 			// Validate sub values inside test block
 			if (vb.test != null)
-				for (BinaryTestBlock bt : vb.test.exp)
-					for (ValueBlock subvb : bt.values)
-						if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
-							throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
+				validateTestBlock(vb.test, pb, aliasForPathBlock);
+//				for (BinaryTestBlock bt : vb.test.exp)
+//					for (ValueBlock subvb : bt.values)
+//						if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
+//							throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 		}));
 		
 		// Compute the destination of each value call blocks
@@ -135,6 +137,22 @@ public class BlockBuilder {
 		System.out.println("Completed in " + (t2-t1) + " milliseconds.");
 		
 		return pathBlocks;
+	}
+	private static void validateTestBlock(LogicalTestBlock lt, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
+		if (lt == null) {} // do nothing
+		else if (lt.bexp != null) {
+			for (BinaryTestBlock tb : lt.bexp)
+				validateTestBlock(tb, pb, aliasForPathBlock);
+		} else if (lt.lexp != null) {
+			for (LogicalTestBlock tb : lt.lexp)
+				validateTestBlock(tb, pb, aliasForPathBlock);
+		} else
+			throw new IllegalStateException("Case not allowed by grammar");
+	}
+	private static void validateTestBlock(BinaryTestBlock bt, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
+		for (ValueBlock subvb : bt.values)
+			if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
+				throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 	}
 	private static boolean isReferenceValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
 		return BlockBuilder.ROOT.equals(vb.argName)
@@ -392,7 +410,7 @@ public class BlockBuilder {
 		return cb;
 	}
 	private static ValueBlock parseValue(Value value) {
-		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseLogicalTestBlock(value.ifExp), value.from);
+		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseIfExp(value.ifExp), value.from);
 		if (result.call != null && !isValidForValue(result.call)) // TODO Why is that so?
 			throw new BlockBuildingError("alias only allowed at the end of a call in " + result.call.name, result.from);
 		return result;
@@ -401,19 +419,26 @@ public class BlockBuilder {
 		// Only the last alias is allowed in a value block call block
 		return cb.path.aliases.length > 0 && IntStream.range(0, cb.path.aliases.length - 1).allMatch(a->cb.path.aliases[a] == null);
 	}
-	private static LogicalTestBlock parseLogicalTestBlock(IfExp exp) {
-		if (exp == null)
-			return null;
-		List<BinaryTestBlock> ops = exp.logicalExp.binaryExp.stream().map(x -> parseBinaryTestBlock(x)).collect(Collectors.toList());
-		if (exp.logicalExp.logicalOp != null) {
+	private static LogicalTestBlock parseIfExp(IfExp exp) {
+		return exp != null ? parseLogicalTestBlock(exp.logicalExp) : null;
+	}
+	private static LogicalTestBlock parseLogicalTestBlock(LogicalExp exp) {
+		String op = null;
+		if (exp.logicalOp != null) {
 			// Validation: Only one operator allowed.
 			// TODO Allow inner logical test block inside parenthesis
-			if (exp.logicalExp.logicalOp.stream().distinct().limit(2).count() != 1)
-				throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalExp.logicalOp, exp.from);
-			return new LogicalTestBlock(exp.logicalExp.from, ops, exp.logicalExp.logicalOp.get(0));
-		} else if (ops.size() == 1)
-			return new LogicalTestBlock(exp.logicalExp.from, ops, "&&"); // defaults to AND
-		else
+			if (exp.logicalOp.stream().distinct().limit(2).count() != 1)
+				throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalOp, exp.from);
+			else
+				op = exp.logicalOp.get(0);
+		}
+		if (exp.logicalExp != null) {
+			List<LogicalTestBlock> ops = exp.logicalExp.stream().map(x -> parseLogicalTestBlock(x)).collect(Collectors.toList());
+			return new LogicalTestBlock(exp.from, ops, null, op);
+		} else if (exp.binaryExp != null) {
+			List<BinaryTestBlock> ops = exp.binaryExp.stream().map(x -> parseBinaryTestBlock(x)).collect(Collectors.toList());
+			return new LogicalTestBlock(exp.from, null, ops, op);
+		} else
 			throw new IllegalStateException("Case not allowed by grammar");
 	}
 	private static BinaryTestBlock parseBinaryTestBlock(BinaryExp exp) {
