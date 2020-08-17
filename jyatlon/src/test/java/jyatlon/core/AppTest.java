@@ -103,5 +103,17 @@ Invalid numbers
 {{'test':Alias10.toString:Alias11}}
 {{if !'true'=='false' '2'}}
 {{call .../Terminal $.block:Alias3}}
+
+{{if ((1>2 || 2>3 || 3>1) && (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1))  'yes!'}}
+{{if !'"'.isEmpty '!Empty'}} %%%  Causes a new EmptyStackException !!!
+{{'test':Alias10.toString:Alias11}}
+{{if !'true'=='false' '2'}}
+{{call .../Terminal $.block:Alias3}}%%%
+
+=== .../Terminal ===
+
+{{Terminal}}!
+{{if Terminal.type=='String' '"'}}%%%
+%%% PC_5 RELATION col=1 =(PC_2, PC_4) 
  */
 }

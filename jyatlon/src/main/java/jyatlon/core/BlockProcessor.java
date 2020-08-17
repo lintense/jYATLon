@@ -425,7 +425,9 @@ public class BlockProcessor {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		
+		// If current object is a Collection...
+//		Collection.class.isAssignableFrom(c);
+
 		return x != null ? p.add(ob.methodName, ob.aliasName, x) : null;
 	}
 	public static class Status {

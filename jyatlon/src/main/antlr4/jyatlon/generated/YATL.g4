@@ -15,7 +15,7 @@ template
 	;
 	
 section
-	: SPACE* SECTIONSEP SPACE* pathExp SPACE* SECTIONSEP SPACE* NEWLINE line*
+	: SPACE* SECTIONSEP SPACE* pathExp SPACE* SECTIONSEP SPACE* (commentOp rawText*)* NEWLINE line*
 	| EQUAL ROOT EQUAL NEWLINE line*
 	;
 	
