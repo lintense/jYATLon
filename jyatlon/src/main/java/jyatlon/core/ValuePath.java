@@ -57,6 +57,12 @@ public class ValuePath {
 				return objects[i-1];
 		throw new IllegalArgumentException("The name '" + name + "' cannot be found in the path");
 	}
+//	public Object getObjectForName(String name, Object defaultObject) {
+//		for (int i = classes.length; i > 0; i--)
+//			if (name.equals(classes[i-1]) || name.equals(aliases[i-1]))
+//				return objects[i-1];
+//		return defaultObject;
+//	}
 	public String getAliasName() {
 		return aliases[aliases.length - 1];
 	}

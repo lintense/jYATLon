@@ -1,6 +1,8 @@
 package jyatlon.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ public abstract class Block {
 	boolean isControl() {
 		return false;
 	}
+	public abstract List<ValueBlock> getValues();
 
 	public static class ControlBlock extends Block {
 		
@@ -94,6 +97,9 @@ public abstract class Block {
 		boolean isControl() {
 			return true;
 		}
+		public List<ValueBlock> getValues(){
+			return begin.getValues();
+		}
 	}
 	public static class ControlOperator extends Block {
 		final boolean isEndOfBlock;
@@ -114,8 +120,8 @@ public abstract class Block {
 		public void addBlock(Block b) {
 			blocks.add(b);
 		}
-		List<ValueBlock> getValues(){
-			return blocks.stream().filter(b->b.isValue()).map(b->(ValueBlock)b).collect(Collectors.toList());
+		public List<ValueBlock> getValues(){
+			return blocks.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
 		}	
 	}
 	public static class PathBlock extends Block {
@@ -133,8 +139,8 @@ public abstract class Block {
 		public void init(ControlBlock cb) {
 			this.controlBlock = cb;
 		}
-		List<ValueBlock> getValues(){
-			return blocks.stream().filter(b->b.isValue()).map(b->(ValueBlock)b).collect(Collectors.toList());
+		public List<ValueBlock> getValues(){
+			return blocks.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
 		}
 	}
 	public static class TextBlock extends Block {
@@ -146,6 +152,9 @@ public abstract class Block {
 		}
 		boolean isText() {
 			return true;
+		}
+		public List<ValueBlock> getValues() {
+			return Collections.emptyList();
 		}
 	}
 	// Do not put logic in this class
@@ -187,6 +196,12 @@ public abstract class Block {
 			result.remove(null);
 			return result;
 		}
+		public List<ValueBlock> getValues(){
+			List<ValueBlock> result = new ArrayList<>();
+			ops.forEach(op -> result.addAll(op.getValues())); // will be needed before the value itself
+			result.add(this);
+			return result;
+		}
 	}
 	public static class OperationBlock extends Block {
 		final String methodName;
@@ -200,6 +215,9 @@ public abstract class Block {
 		}
 		void addArgument(ValueBlock arg) {
 			args.add(arg);
+		}
+		public List<ValueBlock> getValues(){
+			return args;
 		}
 	}
 	public static class CallBlock extends Block {
@@ -228,6 +246,9 @@ public abstract class Block {
 		public PathBlock getBlockToCall() {
 			return toCall;
 		}
+		public List<ValueBlock> getValues() {
+			return Collections.emptyList();
+		}
 	}
 	public static class LogicalTestBlock extends Block {
 		public final List<BinaryTestBlock> bexp;
@@ -239,6 +260,12 @@ public abstract class Block {
 			this.lexp = lexp;
 			this.op = op;
 		}
+		public List<ValueBlock> getValues(){
+			List<ValueBlock> result = new ArrayList<>();
+			result.addAll(bexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()));
+			result.addAll(lexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()));
+			return result;
+		}
 	}
 	public static class BinaryTestBlock extends Block {
 		public final String op;
@@ -247,6 +274,9 @@ public abstract class Block {
 			super(from);
 			this.op = op;
 			this.values = values;
+		}
+		public List<ValueBlock> getValues(){
+			return values;
 		}
 	}
 }
