@@ -1,0 +1,3 @@
+After updating a file here:
+In Eclipse, click on jyatlon project and select Maven > Update project...
+To is required for Maven to move the files to the target repository

@@ -167,6 +167,12 @@ public interface YATLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMethodName(YATLParser.MethodNameContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link YATLParser#aliasExp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAliasExp(YATLParser.AliasExpContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link YATLParser#aliasName}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

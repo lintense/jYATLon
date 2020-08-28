@@ -328,6 +328,18 @@ public class YATLBaseListener implements YATLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterAliasExp(YATLParser.AliasExpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAliasExp(YATLParser.AliasExpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAliasName(YATLParser.AliasNameContext ctx) { }
 	/**
 	 * {@inheritDoc}

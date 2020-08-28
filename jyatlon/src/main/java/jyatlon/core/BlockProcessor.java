@@ -26,6 +26,11 @@ import jyatlon.core.Block.ValueBlock;
 /**
  * @author linte
  * SRP: A state less processor that generate a text file.
+
+ * Add into doc:
+ * ATTENTION : The ROOT ctx IS NOT available in absolute path...
+ * Parameters...
+ * 
  * TODO : Do we still need the statuses???
  * TODO : Processing of 'null'
  * TODO : Map key access and 'class' key
@@ -33,6 +38,7 @@ import jyatlon.core.Block.ValueBlock;
  * TODO : Revise doc for missing stuff
  * TODO : Write a Dev Guide?
  * TODO : Define Matcher interface and add it as an optional parm
+ * TODO : {call} should be a control, not a value...
  */
 public class BlockProcessor {
 
@@ -44,7 +50,7 @@ public class BlockProcessor {
 			System.out.println("Starting merge process...");
 			long t1 = System.currentTimeMillis();
 			Matcher matcher = new Matcher();
-			writeBlock(pb, w, new Combination(matcher, new ValuePath(BlockBuilder.ROOT, null, r)));
+			writeBlock(pb, w, new Combination(matcher), ValuePath.getRoot(r));
 			long t2 = System.currentTimeMillis();
 			System.out.println("Completed in " + (t2-t1) + " milliseconds.");
 		} catch (IOException e) {
@@ -52,53 +58,102 @@ public class BlockProcessor {
 			e.printStackTrace();
 		}
 	}
-	private static void writeBlock(PathBlock pb, Writer w, Combination combination) throws IOException {
+	private static void writeBlock(PathBlock pb, Writer w, Combination combination, ValuePath ctx) throws IOException {
 
 		// Record of all created value from here!
-		Map<String,Status> statuses = new HashMap<>(); // FIXME do we need this?
-		if (pb.controlBlock != null)
-			writeBlock(pb.controlBlock, w, combination, statuses);
+//		Map<String,Status> statuses = new HashMap<>(); // FIXME do we need this?
+		
+		// This process must be here in order to throw errors
+		List<ValuePath> pathParms = new ArrayList<>();
+		pb.args.forEach(a->{
+			Object o = combination.getObjectForName(a);
+			if (o == null)
+				throw new IllegalStateException("Should not happen: Parameter '" + a + "' not defined for section " + pb.pathname);
+			pathParms.add(new ValuePath(o.getClass().getSimpleName(), a, o));
+		});
+		
+		if (pb.getControlBlock() != null)
+			writeBlock(pb.getControlBlock(), w, combination.callPath(ctx, pathParms));
 	}
-	private static void writeBlock(ControlBlock cb, Writer w, Combination combination, Map<String,Status> statuses) throws IOException {
-		
-		// For this control block, iterate through all the values and their ops
-		// for each op, collect all the result and their associated alias path
-		
+	private static void writeBlock(ControlBlock cb, Writer w, Combination combination) throws IOException {
+
 		// Questions: - For each ALIAS: Is it a Collection? Is is empty?
-		List<String> outputs = writeBlock(cb.begin, combination, statuses);
+//		List<String> outputs = writeBlock(cb.begin, combination, statuses);
 		
-		// My alias should have been defined here!
-		// CASE 1 - Something has been written but the alias was not present // This control block should be ignored... keep the output stuff
-		// CASE 2 - Alias was present but never defined // Consider it as empty!
-		Status s = statuses.getOrDefault(cb.aliasName, null);
-		if (s == null)
-			flushStrings(outputs, w); // Alias was never used, so ignore this control block.
-		else {
-			if (!s.isDefined || (s.isDefined && s.isEmpty)) { // There was an attempt to write the alias so consider it as empty.
-				if (cb.empty != null)
-					flushStrings(writeBlock(cb.empty, combination, statuses), w);
-			} else if (s.isDefined && s.isCollection) { // This is a collection, so dress it up a bit.
-				if (cb.before != null)
-					flushStrings(writeBlock(cb.before, combination, statuses), w);
-				boolean first = true;
-				for (String out : outputs) {
+		List<Combination> oldCombinations = computeCombinations(combination, new LinkedList<>(cb.begin.getExclusiveValues()));
+		
+		StringWriter sw = new StringWriter();
+		// Always write blocks in order
+		boolean first = true;
+		for (Block b : cb.begin.blocks) {
+			if (b.isText())
+				writeBlock((TextBlock)b, sw);
+			else if (b.isValue() && cb.aliasName.equals(((ValueBlock)b).valuePath.getAliasName())) {
+
+				for (Combination oc : oldCombinations) {
 					if (!first && cb.between != null)
-						flushStrings(writeBlock(cb.between, combination, statuses), w);
+						writeBlock(cb.between, oc, sw);
 					else
 						first = false;
-					w.append(out);
+					if (cb.before != null)
+						writeBlock(cb.before, combination, sw);
+					writeBlock((ValueBlock)b, sw, oc);
+					if (cb.after != null)
+						writeBlock(cb.after, combination, sw);
 				}
-				if (cb.end != null)
-					flushStrings(writeBlock(cb.end, combination, statuses), w);	
-			} else {
-				flushStrings(outputs, w); // It is a defined object, keep output intact.
-			}
+
+			} else if (b.isValue()) {
+				for (Combination oc : oldCombinations)
+					writeBlock((ValueBlock)b, sw, oc);
+			} else if (b.isControl())
+				for (Combination oc : oldCombinations)
+					writeBlock((ControlBlock)b, sw, oc);
+			else
+				throw new IllegalStateException("To be implemented"); // FIXME To be implemented
 		}
+		if (first && cb.empty != null) {// No alias block found, the whole begin block must be ignored entirely
+			
+			writeBlock(cb.empty, combination, w);
+			
+		} else
+			w.append(sw.toString());
+		
+//		result.add(sw.toString());
+//		sw.getBuffer().setLength(0);
+		
+		
+		
+
+		
+
+//		if (!combination.isAliasDefined(cb.aliasName))
+//			flushStrings(outputs, w); // Alias was never used, so ignore this control block.
+//		else {
+//			if (combination.isAliasNotEmpty(cb.aliasName)) { // This is a collection, so dress it up a bit.
+//				if (cb.before != null)
+//					flushStrings(writeBlock(cb.before, combination, statuses), w);
+//				boolean first = true;
+//				for (String out : outputs) {
+//					if (!first && cb.between != null)
+//						flushStrings(writeBlock(cb.between, combination, statuses), w);
+//					else
+//						first = false;
+//					w.append(out);
+//				}
+//				if (cb.after != null)
+//					flushStrings(writeBlock(cb.after, combination, statuses), w);	
+//			} else if (combination.isAliasEmpty(cb.aliasName)) { // There was an attempt to write the alias so consider it as empty.
+//				if (cb.empty != null)
+//					flushStrings(writeBlock(cb.empty, combination, statuses), w);
+//			} else { // not a Collection
+//				flushStrings(outputs, w); // It is a defined object, keep output intact.
+//			}
+//		}
 	}
-	private static void flushStrings(List<String> strings, Writer w) throws IOException {
-		for (String s : strings)
-			w.append(s);
-	}
+//	private static void flushStrings(List<String> strings, Writer w) throws IOException {
+//		for (String s : strings)
+//			w.append(s);
+//	}
 	private static boolean isDefined(ValueBlock vb, Combination combination) {
 		boolean argOk = vb.ops == null || vb.ops.stream().map(op -> op.getValues()).flatMap(List::stream).allMatch(ivb -> combination.getMatchingPath(ivb.valuePath) != null);
 		boolean vbOk = combination.isAliasDefined(vb.argName)
@@ -106,20 +161,13 @@ public class BlockProcessor {
 				|| combination.isClassDefined(vb.argName);
 		return argOk && vbOk;
 	}
-	private static List<String> writeBlock(ControlOperator co, Combination combination, Map<String,Status> statuses) throws IOException {
-
+	private static List<Combination> computeCombinations(Combination combination, LinkedList<ValueBlock> toProcess){
 		List<Combination> oldCombinations = new ArrayList<>();
 		List<Combination> newCombinations;
 		oldCombinations.add(combination);
 		
 		// Compute all the possible values.
 		int control = 0; // Ensure this process will end some day!
-//		List<List<ValuePath>> allValueCtx = new ArrayList<List<ValuePath>>(); // One element per ValueBlock
-//		List<ValuePath> alreadyDefinedPaths = new ArrayList<>();
-//		alreadyDefinedPaths.add(vp);
-		
-//		Combination currentCombination = combination;
-		LinkedList<ValueBlock> toProcess = new LinkedList<>(co.getValues());
 		while (!toProcess.isEmpty() && control < toProcess.size()) {
 			ValueBlock vb = toProcess.removeFirst();
 			
@@ -128,7 +176,7 @@ public class BlockProcessor {
 				control = 0;
 				newCombinations = new ArrayList<>();
 				for (Combination oc : oldCombinations) {
-					List<ValuePath> paths = computeValues(vb, oc, statuses);
+					List<ValuePath> paths = computeValues(vb, oc);
 					for (ValuePath pathCtx : paths) {
 						Combination nc = oc.addPath(pathCtx);
 						if (nc != null) // Add valid only
@@ -145,102 +193,58 @@ public class BlockProcessor {
 		// Add the required validations inside BlockBuilding class to avoid an error here!
 		if (toProcess.size() > 0)
 			throw new IllegalStateException("Cannot process undefined value: " + toProcess.get(0).argName); // FIXME AVoid this at any cost. This should be validated in the BlockBuilder phase.
-		
-		// Create all the possible 'valid' combinations. TODO Collections
-		// The whole control block must be repeated in case there are multiple value path...
-		// Here we must find which combination of values must be shown simultaneously
-		// All possible combinations must be shown
-		// When the value are independent (not sharing aliases) then its a product,
-		
-		// Each matrix entry is (a priori) multiplied with each other
-		//  1,2 x 3,4 = 1,2,3,4
-		// When intersecting: 1,2 x 2,3 = 1,2,3
-		
-		// Combine a lists
-		// When do we need to duplicate the lists? In case of collections!
-		// When to scrap a list? When the aliases are not matching!
-		
-//		List<List<ValuePath>> allCombinations = new ArrayList<>();
-		
-		// FIXME For now, its seems to exist only one combination...
-//		Map<String,Object> combinedAliases = new HashMap<>();
-//		List<ValuePath> combinedCtx = new ArrayList<>();
-		
-//		List<Combination> oldCombinations = new ArrayList<>();
-//		List<Combination> newCombinations = new ArrayList<>();
-//		oldCombinations.add(new Combination(matcher));
-//		
-//		// Generate all combinations
-//		for (List<ValuePath> valueCtx : allValueCtx) {
-//			for (ValuePath pathCtx : valueCtx)
-//				for (Combination oc : oldCombinations) {
-//					Combination nc = oc.addPath(pathCtx);
-//					if (nc != null) // Add valid only
-//						newCombinations.add(nc);
-//				}	
-//			oldCombinations = newCombinations;
-//			newCombinations = new ArrayList<>();
-//		}
-					
-		
-		
-//		LOOP: FOR (LIST<VALUEPATH> VALUECTX : ALLVALUECTX) {
-//			
-//			// VALIDATE NEW VALUECTX COMBINATION. TODO EASY TO SHRINK CODE...
-//			FOR (VALUEPATH PATHCTX : VALUECTX) {
-//				FOR (INT I = 0; I < PATHCTX.ALIASES.LENGTH; I++) {
-//					IF (PATHCTX.ALIASES[I] != NULL) {
-//						OBJECT PREVIOUS = COMBINEDALIASES.PUT(PATHCTX.ALIASES[I], PATHCTX.OBJECTS[I]);
-//						IF (PREVIOUS != NULL && !MATCHER.ISSAMEOBJECT(PREVIOUS, PATHCTX.OBJECTS[I])) {
-//							// NOT A VALID COMBINATION
-//							COMBINEDALIASES.CLEAR();
-//							COMBINEDCTX.CLEAR();
-//							BREAK LOOP;
-//						}
-//					
-//					}
-//				}
-//			}
-//			COMBINEDCTX.ADDALL(VALUECTX);
-//		}
-//		IF (!COMBINEDCTX.ISEMPTY())
-//			ALLCOMBINATIONS.ADD(COMBINEDCTX);
 
-		// Iterate all combinations
-		StringWriter sw = new StringWriter();
-		List<String> result = new ArrayList<>();
-		if (oldCombinations.isEmpty()) { // Give a chance to inner controls to run once
-			for (Block b : co.blocks) {
-				
-				if (b.isText())
-					writeBlock((TextBlock)b, sw);
-				else if (b.isValue())
-					writeBlock((ValueBlock)b, sw, combination);
-				else if (b.isControl())
-					writeBlock((ControlBlock)b, sw, combination, statuses);
-				else
-					throw new IllegalStateException("To be implemented"); // FIXME To be implemented
-			}
-			result.add(sw.toString());
-			sw.getBuffer().setLength(0);
-		} else { // Iterate combinations
-			for (Combination oc : oldCombinations) {
-				for (Block b : co.blocks) {
-					
-					if (b.isText())
-						writeBlock((TextBlock)b, sw);
-					else if (b.isValue())
-						writeBlock((ValueBlock)b, sw, oc);
-					else if (b.isControl())
-						writeBlock((ControlBlock)b, sw, oc, statuses);
-					else
-						throw new IllegalStateException("To be implemented"); // FIXME To be implemented
-				}
-				result.add(sw.toString());
-				sw.getBuffer().setLength(0);
-			}
+		return oldCombinations;
+	}
+//	private static List<String> writeBlock(ControlOperator co, Combination combination, Map<String,Status> statuses) throws IOException {
+//
+//		List<Combination> oldCombinations = computeCombinations(combination, new LinkedList<>(co.getExclusiveValues()), statuses);
+//		
+//		// Iterate all combinations
+//		StringWriter sw = new StringWriter();
+//		List<String> result = new ArrayList<>();
+//		if (oldCombinations.isEmpty()) { // Give a chance to inner controls to run once
+//			for (Block b : co.blocks) {
+//				if (b.isText())
+//					writeBlock((TextBlock)b, sw);
+//				else if (b.isValue())
+//					writeBlock((ValueBlock)b, sw, combination);
+//				else if (b.isControl())
+//					writeBlock((ControlBlock)b, sw, combination, statuses);
+//				else
+//					throw new IllegalStateException("To be implemented"); // FIXME To be implemented
+//			}
+//			result.add(sw.toString());
+//			sw.getBuffer().setLength(0);
+//		} else { // Iterate combinations
+//			for (Block b : co.blocks) {
+//				if (b.isText())
+//					writeBlock((TextBlock)b, sw);
+//				else if (b.isValue())
+//					for (Combination oc : oldCombinations)
+//						writeBlock((ValueBlock)b, sw, oc);
+//				else if (b.isControl())
+//					for (Combination oc : oldCombinations)
+//						writeBlock((ControlBlock)b, sw, oc, statuses);
+//				else
+//					throw new IllegalStateException("To be implemented"); // FIXME To be implemented
+//			}
+//			result.add(sw.toString());
+//			sw.getBuffer().setLength(0);
+//		}
+//		return result;
+//	}
+	private static void writeBlock(ControlOperator co, Combination combination, Writer w) throws IOException {
+		for (Block b : co.blocks) {
+			if (b.isText())
+				writeBlock((TextBlock)b, w);
+			else if (b.isValue()) {
+				writeBlock((ValueBlock)b, w, combination);
+			} else if (b.isControl())
+				writeBlock((ControlBlock)b, w, combination);
+			else
+				throw new IllegalStateException("To be implemented"); // FIXME To be implemented
 		}
-		return result;
 	}
 	private static void writeBlock(ValueBlock vb, Writer w, Combination combination) throws IOException {
 		
@@ -253,7 +257,8 @@ public class BlockProcessor {
 					w.append(o.toString());
 				else { // TODO called path must match actual object class or interface?
 					PathBlock pb = vb.call.getBlockToCall();
-					writeBlock(vb.call.getBlockToCall(), w, new Combination(combination.matcher, combination.pathCtx.add(pb.path.path.getClassName(), pb.path.path.getAliasName(), o)));
+//					writeBlock(vb.call.getBlockToCall(), w, new Combination(combination.matcher, combination.pathCtx.add(pb.path.path.getClassName(), pb.path.path.getAliasName(), o)));@
+					writeBlock(vb.call.getBlockToCall(), w, combination, new ValuePath(pb.path.path.getClassName(), pb.path.path.getAliasName(), o));
 				}
 			} else if (foundPath == null)
 				throw new IllegalStateException("Path not found for current value!"); // FIXME should this ever happen?
@@ -354,7 +359,7 @@ public class BlockProcessor {
 		w.append(tb.text);
 	}
 
-	private static List<ValuePath> computeValues(ValueBlock vb, Combination combination, Map<String,Status> statuses) {
+	private static List<ValuePath> computeValues(ValueBlock vb, Combination combination) {
 		// Init value object
 //		if (vb.unaryOp != null)
 //			throw new IllegalStateException("unaryOp not yet implemented"); // FIXME To be implemented
@@ -373,8 +378,8 @@ public class BlockProcessor {
 		
 		// Maybe it is not a problem since empty list and null object are both considered empty and as such are treated the same way.
 		if (obj == null) {
-			if (!statuses.containsKey(vb.aliasName))
-				statuses.put(vb.aliasName, new Status(vb.aliasName)); // At least we have tried...
+//			if (!statuses.containsKey(vb.aliasName))
+//				statuses.put(vb.aliasName, new Status(vb.aliasName)); // At least we have tried...
 			return Collections.emptyList();
 		}
 		
@@ -386,8 +391,8 @@ public class BlockProcessor {
 			toProcess.add(new ValuePath(vb.argName, vb.aliasName, obj));
 		
 		List<ValuePath> result = toProcess;
-		if (vb.aliasName != null)
-			statuses.put(vb.aliasName, new Status(vb.aliasName, obj instanceof Collection, result.isEmpty()));
+//		if (vb.aliasName != null)
+//			statuses.put(vb.aliasName, new Status(vb.aliasName, obj instanceof Collection, result.isEmpty()));
 		
 		// Process operators
 //		for (OperationBlock op : vb.ops) {
@@ -396,32 +401,32 @@ public class BlockProcessor {
 //				statuses.put(op.aliasName, new Status(op.aliasName, result instanceof Collection, result.isEmpty()));
 //		}
 		for (OperationBlock op : vb.ops) {
-			result = result.stream().map(p->extractPaths(op, p, combination, statuses)).flatMap(List::stream).collect(Collectors.toList());
+			result = result.stream().map(p->extractPaths(op, p, combination)).flatMap(List::stream).collect(Collectors.toList());
 		}
 		
 		// Compute sub values inside test block
 		if (vb.test != null) 
-			result.addAll(computeValues(vb.test, combination, statuses));
+			result.addAll(computeValues(vb.test, combination));
 		
 		return result;
 	}
-	private static List<ValuePath> computeValues(LogicalTestBlock lbt, Combination combination, Map<String,Status> statuses) {
+	private static List<ValuePath> computeValues(LogicalTestBlock lbt, Combination combination) {
 		List<ValuePath> result = new ArrayList<>();
 		if (lbt.bexp != null)
 			for (BinaryTestBlock bt : lbt.bexp)
-				result.addAll(computeValues(bt, combination, statuses));
+				result.addAll(computeValues(bt, combination));
 		else if (lbt.lexp != null)
 			for (LogicalTestBlock lt :lbt.lexp)
-				result.addAll(computeValues(lt, combination, statuses));
+				result.addAll(computeValues(lt, combination));
 		return result;
 	}
-	private static List<ValuePath> computeValues(BinaryTestBlock bt, Combination combination, Map<String,Status> statuses) {
+	private static List<ValuePath> computeValues(BinaryTestBlock bt, Combination combination) {
 		List<ValuePath> result = new ArrayList<>();
 		for (ValueBlock subvb : bt.values)
-			result.addAll(computeValues(subvb, combination, statuses));
+			result.addAll(computeValues(subvb, combination));
 		return result;
 	}
-	private static List<ValuePath> extractPaths(OperationBlock ob, ValuePath p, Combination combination, Map<String,Status> statuses){
+	private static List<ValuePath> extractPaths(OperationBlock ob, ValuePath p, Combination combination){
 		Object o = p.getObject();
 		Class<?> c = o.getClass();
 		
@@ -437,12 +442,12 @@ public class BlockProcessor {
 				Collection<?> cx = (Collection<?>)x;
 				for (Object xe : cx)
 					result.add(p.add(ob.methodName, ob.aliasName, xe));
-				if (ob.aliasName != null)
-					statuses.put(ob.aliasName, new Status(ob.aliasName, true, cx.isEmpty()));
+//				if (ob.aliasName != null)
+//					statuses.put(ob.aliasName, new Status(ob.aliasName, true, cx.isEmpty()));
 			} else {
 				result.add(p.add(ob.methodName, ob.aliasName, x));
-				if (ob.aliasName != null)
-					statuses.put(ob.aliasName, new Status(ob.aliasName, false, false));
+//				if (ob.aliasName != null)
+//					statuses.put(ob.aliasName, new Status(ob.aliasName, false, false));
 			} // TODO Map?
 		}
 		return result;
@@ -466,31 +471,31 @@ public class BlockProcessor {
 
 		return x;
 	}
-	public static class Status {
-		public final String aliasName;
-		public final boolean isDefined;
-		public final boolean isCollection;
-		public final boolean isEmpty;
-//		public final Object value;
-		
-		public Status(String aliasName) { // This ALIAS exists but has not yet been defined
-			this.aliasName = aliasName;
-			this.isDefined = false;
-			this.isCollection = false;
-			this.isEmpty = false;
-//			this.value = null;
-		}
-		public Status(String aliasName, boolean isCollection, boolean isEmpty) {
-			super();
-			this.aliasName = aliasName;
-			this.isDefined = true;
-			this.isCollection = isCollection;
-			this.isEmpty = isEmpty;
-//			this.value = value;
-		}
-		
-		
-	}
+//	public static class Status {
+//		public final String aliasName;
+//		public final boolean isDefined;
+//		public final boolean isCollection;
+//		public final boolean isEmpty;
+////		public final Object value;
+//		
+//		public Status(String aliasName) { // This ALIAS exists but has not yet been defined
+//			this.aliasName = aliasName;
+//			this.isDefined = false;
+//			this.isCollection = false;
+//			this.isEmpty = false;
+////			this.value = null;
+//		}
+//		public Status(String aliasName, boolean isCollection, boolean isEmpty) {
+//			super();
+//			this.aliasName = aliasName;
+//			this.isDefined = true;
+//			this.isCollection = isCollection;
+//			this.isEmpty = isEmpty;
+////			this.value = value;
+//		}
+//		
+//		
+//	}
 	private static class Combination {
 		
 		final Matcher matcher;
@@ -499,14 +504,27 @@ public class BlockProcessor {
 		final List<ValuePath> paths = new ArrayList<>();
 		final Map<String,Object> combinedClasses = new HashMap<>();
 		
-		Combination(Matcher matcher, ValuePath pathCtx) {
-			super();
+		Combination(Matcher matcher){ // Initial empty combination
+			this.pathCtx = null;
+			this.matcher = matcher;
+		}
+		Combination callPath(ValuePath vp, List<ValuePath> pathParms) {
+			return new Combination(matcher, pathCtx != null ? pathCtx.add(vp) : vp, pathParms);
+		}
+		private Combination(Matcher matcher, ValuePath pathCtx, List<ValuePath> pathParms) {
 			this.pathCtx = pathCtx;
 			this.matcher = matcher;
+			
+			if (paths.isEmpty()) {
+				paths.add(pathCtx);
+				if (pathCtx.isRoot())
+					this.combinedClasses.put(pathCtx.classes[0], pathCtx.objects[0]);
+			}
 			initPath(pathCtx);
+			paths.addAll(pathParms);
+			pathParms.forEach(p->initPath(p));
 		}
 		private Combination(Combination parent){
-			super();
 			this.pathCtx = parent.pathCtx;
 			this.matcher = parent.matcher;
 			this.paths.addAll(parent.paths);
@@ -519,11 +537,11 @@ public class BlockProcessor {
 			return result.initPath(vp) ? result : null;
 		}
 		private boolean initPath(ValuePath vp) {
-			if (paths.isEmpty()) {
-				paths.add(pathCtx);
-				if (BlockBuilder.ROOT.equals(pathCtx.classes[0]))
-					this.combinedClasses.put(pathCtx.classes[0], pathCtx.objects[0]);
-			}
+//			if (paths.isEmpty()) {
+//				paths.add(pathCtx);
+//				if (BlockBuilder.ROOT.equals(pathCtx.classes[0]))
+//					this.combinedClasses.put(pathCtx.classes[0], pathCtx.objects[0]);
+//			}
 			for (int i = 0; i < vp.aliases.length; i++) {
 				if (vp.aliases[i] != null) {
 					Object previous = combinedAliases.put(vp.aliases[i], vp.objects[i]);
@@ -555,5 +573,13 @@ public class BlockProcessor {
 		boolean isClassDefined(String className) {
 			return combinedClasses.containsKey(className);
 		}
+//		boolean isAliasEmpty(String name) {
+//			Object o = combinedAliases.getOrDefault(name, null);
+//			return o != null && Collection.class.isAssignableFrom(o.getClass()) && ((Collection<?>)o).isEmpty();
+//		}
+//		boolean isAliasNotEmpty(String name) {
+//			Object o = combinedAliases.getOrDefault(name, null);
+//			return o != null && Collection.class.isAssignableFrom(o.getClass()) && !((Collection<?>)o).isEmpty();
+//		}
 	}
 }

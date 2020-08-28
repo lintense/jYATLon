@@ -15,7 +15,7 @@ template
 	;
 	
 section
-	: SPACE* SECTIONSEP SPACE* pathExp SPACE* SECTIONSEP SPACE* (commentOp rawText*)* NEWLINE line*
+	: SPACE* SECTIONSEP SPACE* pathExp aliasExp? SPACE* SECTIONSEP SPACE* (commentOp rawText*)* NEWLINE line*
 	| EQUAL ROOT EQUAL NEWLINE line*
 	;
 	
@@ -50,6 +50,7 @@ commentOp
 rawText
 	: SPACE+
 	| ~( SPACE | SECTIONSEP | NEWLINE | ESCAPE | CONTROL | COMMENTSEP | LVALUE )+
+	| '?' | ';'
 	;
 
 value
@@ -61,7 +62,7 @@ ifExp
 	;
 
 callExp
-	: CALL SPACE+ pathExp
+	: CALL SPACE+ pathExp argExp?
 	;
 
 logicalExp
@@ -96,11 +97,11 @@ valueArg
 	;
 	
 operation 
-	: DOT SPACE? methodName (SPACE? '(' SPACE? argExp? SPACE? ')')? (SPACE? COLON SPACE? aliasName)?
+	: DOT SPACE? methodName argExp? (SPACE? COLON SPACE? aliasName)?
 	;
 
 argExp
-	: valueExp (SPACE? COMMA SPACE? valueExp)*
+	: SPACE? '(' (SPACE? valueExp (SPACE? COMMA SPACE? valueExp)*)? SPACE? ')'
 	;
 
 pathExp
@@ -121,6 +122,10 @@ pathName
 
 methodName
 	: NAME
+	;
+
+aliasExp
+	: SPACE? '(' SPACE? aliasName (SPACE? COMMA SPACE? aliasName)* ')'
 	;
 	
 aliasName

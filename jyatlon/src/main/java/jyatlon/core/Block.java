@@ -1,7 +1,6 @@
 package jyatlon.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -122,18 +121,26 @@ public abstract class Block {
 		}
 		public List<ValueBlock> getValues(){
 			return blocks.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
-		}	
+		}
+		/**
+		 * @return the values that belong only to this control (not included into inner ones)
+		 */
+		public List<ValueBlock> getExclusiveValues(){
+			return blocks.stream().filter(b->b.isValue()).map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
+		}
 	}
 	public static class PathBlock extends Block {
 		final String pathname;
 		final CallBlock path;
 		List<Block> blocks;
-		ControlBlock controlBlock;
+		final List<String> args;
+		private ControlBlock controlBlock;
 		
-		public PathBlock(String pathname, CallBlock path, List<Block> blocks, int from) {
+		public PathBlock(String pathname, CallBlock path, List<Block> blocks, List<String> args, int from) {
 			super(from);
 			this.pathname = pathname;
 			this.path = path;
+			this.args = args;
 			this.blocks = blocks;
 		}
 		public void init(ControlBlock cb) {
@@ -141,6 +148,9 @@ public abstract class Block {
 		}
 		public List<ValueBlock> getValues(){
 			return blocks.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
+		}
+		public ControlBlock getControlBlock() {
+			return controlBlock;
 		}
 	}
 	public static class TextBlock extends Block {
@@ -199,6 +209,7 @@ public abstract class Block {
 		public List<ValueBlock> getValues(){
 			List<ValueBlock> result = new ArrayList<>();
 			ops.forEach(op -> result.addAll(op.getValues())); // will be needed before the value itself
+			result.addAll(call != null ? call.getValues() : Collections.emptyList());
 			result.add(this);
 			return result;
 		}
@@ -222,16 +233,18 @@ public abstract class Block {
 	}
 	public static class CallBlock extends Block {
 
-		public final ValuePath path;
-		public final String name;
-		public final boolean isRelative;
+		final ValuePath path;
+		final String name;
+		final boolean isRelative;
+		final List<ValueBlock> args; // empty when into a PathBlock.path
 		private PathBlock toCall;
 		
-		public CallBlock(ValuePath path, boolean isRelative, int from) {
+		public CallBlock(ValuePath path, boolean isRelative, List<ValueBlock> args, int from) {
 			super(from);
 			this.path = path;
+			this.args = args;
 			this.isRelative = isRelative;
-			this.name = computeName();
+			this.name = computeName(); // FIXME Is it used?
 		}
 		private String computeName() {
 			String result = "";
@@ -247,7 +260,7 @@ public abstract class Block {
 			return toCall;
 		}
 		public List<ValueBlock> getValues() {
-			return Collections.emptyList();
+			return args.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
 		}
 	}
 	public static class LogicalTestBlock extends Block {

@@ -91,7 +91,7 @@ public class BlockBuilder {
 		// A value expression always starts with any of: the root context, a path or an alias.
 		// Reason: To help the user, no implicit value.
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
-			if (!isReferenceValidValueBlock(vb, pb, aliasForPathBlock))
+			if (!isValidValueBlock(vb, pb, aliasForPathBlock))
 				throw new BlockBuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
 
 			// Validate sub values inside test block
@@ -114,8 +114,12 @@ public class BlockBuilder {
 				if (toCall == null)
 					throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
 			} else {
+				
+				
+				List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
+				
 				// Add parent block path to call block if call is relative
-				CallBlock newCB = pb.path != null ? new CallBlock(pb.path.path.add(vb.call.path), pb.path.isRelative, vb.from) : vb.call;
+				CallBlock newCB = pb.path != null ? new CallBlock(pb.path.path.add(vb.call.path), pb.path.isRelative, args, vb.from) : vb.call;
 				
 				// If new call block is absolute (as by parent) then check again for an exact match
 				toCall = newCB.isRelative
@@ -151,12 +155,14 @@ public class BlockBuilder {
 	}
 	private static void validateTestBlock(BinaryTestBlock bt, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
 		for (ValueBlock subvb : bt.values)
-			if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
+			if (!isValidValueBlock(subvb, pb, aliasForPathBlock))
 				throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 	}
-	private static boolean isReferenceValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
+	private static boolean isValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
 		return BlockBuilder.ROOT.equals(vb.argName)
+		|| (pb.args.contains(vb.argName))
 		|| (pb.path != null && pb.path.path.containsClassName(vb.argName))
+		|| (pb.path != null && pb.path.path.containsAliasName(vb.argName)) //@
 		|| Utils.isString(vb.argName, BlockBuilder.QUOTES)
 		|| Utils.isNumber(vb.argName)
 		|| aliasForPathBlock.get(pb).contains(vb.argName);
@@ -255,10 +261,15 @@ public class BlockBuilder {
 	}
 	private static PathBlock parseSection(String fullText, Section section){
 		
+		// Extract path parms
+		List<String> sectionParms = section.aliasExp == null || section.aliasExp.aliasName == null
+			? Collections.emptyList()
+			: section.aliasExp.aliasName;
+		
 		// Process path
-		CallBlock cp = parsePathExp(section.pathExp);
+		CallBlock cp = parsePathExp(section.pathExp, Collections.emptyList());
 		if (section.line == null)
-			return new PathBlock(cp == null ? ROOT : cp.name, cp, Collections.emptyList(), section.from);
+			return new PathBlock(cp == null ? ROOT : cp.name, cp, Collections.emptyList(), sectionParms, section.from);
 
 		// Extract lines
 		List<Line> lines = section.line.stream().collect(Collectors.toList());
@@ -274,7 +285,7 @@ public class BlockBuilder {
 				
 		// Process lines
 		List<Block> blocks = parseLines(fullText, lines);
-		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.name, cp, blocks, section.from);
+		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.name, cp, blocks, sectionParms, section.from);
 		
 		// Compute value blocks
 		ControlBlock cb = extractControlBlock(new ControlBlock(pb, pb.from), blocks.iterator());
@@ -283,15 +294,22 @@ public class BlockBuilder {
 		return pb;
 	}
 	private static CallBlock parseCallExp(CallExp call) {
-		return call != null ? parsePathExp(call.pathExp) : null;
+		
+		if (call != null) {
+			List<ValueBlock> result = new ArrayList<>();
+			if (call.argExp != null && call.argExp.valueExp != null) // && !call.argExp.valueExp.isEmpty())
+				call.argExp.valueExp.forEach(a->result.add(parseValueExp(a, null, null, a.from)));
+			return parsePathExp(call.pathExp, result);
+		}
+		return null;
 	}
-	private static CallBlock parsePathExp(PathExp path) {
+	private static CallBlock parsePathExp(PathExp path, List<ValueBlock> args) {
 		// First Section Path is null for now
 		// Useless to create a Path here since we dont know the actual root Object type
 		if (path == null)
 			return null;
 
-		return new CallBlock(parsePathArg(path.pathArg), path.anyPathOp != null, path.from);
+		return new CallBlock(parsePathArg(path.pathArg), path.anyPathOp != null, args, path.from);
 	}
 	private static ValuePath parsePathArg(List<PathArg> pathArgs) {
 		ValuePath p = null;

@@ -268,6 +268,16 @@ public interface YATLListener extends ParseTreeListener {
 	 */
 	void exitMethodName(YATLParser.MethodNameContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link YATLParser#aliasExp}.
+	 * @param ctx the parse tree
+	 */
+	void enterAliasExp(YATLParser.AliasExpContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YATLParser#aliasExp}.
+	 * @param ctx the parse tree
+	 */
+	void exitAliasExp(YATLParser.AliasExpContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link YATLParser#aliasName}.
 	 * @param ctx the parse tree
 	 */

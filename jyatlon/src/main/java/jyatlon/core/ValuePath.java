@@ -17,6 +17,9 @@ public class ValuePath {
 	public final String[] classes;
 	public final Object[] objects;
 	
+	public static ValuePath getRoot(Object o) {
+		return new ValuePath(BlockBuilder.ROOT, null, o);
+	}
 	public ValuePath(String pathName, String pathAlias, Object obj) {
 		this.aliases = new String[] {pathAlias};
 		this.classes = new String[] {pathName};
@@ -32,6 +35,9 @@ public class ValuePath {
 		this.aliases = aliases;
 		this.classes = classes;
 		this.objects = objects;
+	}
+	public boolean isRoot() { // Root assigned to class so it can be redefined
+		return aliases.length == 1 && BlockBuilder.ROOT.equals(classes[0]) && aliases[0] == null;
 	}
 	public ValuePath add(String className, String pathAlias, Object obj) {
 		assert className != null && pathAlias != null;

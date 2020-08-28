@@ -80,6 +80,11 @@ class AppTest {
 	}
 /* Stuff to be tested - someday
  * 
+ * 1{begin ALIAS}2{end ALIAS}3%%% ==> 123
+ * 1{begin ALIAS}2 {{$:ALIAS}} 3{end ALIAS}4%%% ==> 12 ROOT 34
+ * 1{begin ALIAS}2 {{$.block.parms:ALIAS}} 3{before ALIAS}b-{between ALIAS}={after ALIAS}-a{end ALIAS}4%%% ==> 12 b-X1-a=b-X2-a 34
+ * 
+ * 
 Alias must exist
 {{Alias3}}
 {{$.block:Alias3}}
