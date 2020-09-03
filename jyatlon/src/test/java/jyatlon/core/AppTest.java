@@ -82,8 +82,8 @@ class AppTest {
  * 
  * 1{begin ALIAS}2{end ALIAS}3%%% ==> 123
  * 1{begin ALIAS}2 {{$:ALIAS}} 3{end ALIAS}4%%% ==> 12 ROOT 34
- * 1{begin ALIAS}2 {{$.block.parms:ALIAS}} 3{before ALIAS}b-{between ALIAS}={after ALIAS}-a{end ALIAS}4%%% ==> 12 b-X1-a=b-X2-a 34
- * 
+ * 1{begin ALIAS}2 {{$.block.parms:ALIAS}} 3{before ALIAS}b-{between ALIAS}={after ALIAS}-a{end ALIAS}4%%% ==> 1b-2 X 3-a=b-2 X 3-a4
+ * 1{begin ALIAS}2 {{$.empty:ALIAS}} 3{empty ALIAS}empty{end ALIAS}4%%% ==> 1empty4
  * 
 Alias must exist
 {{Alias3}}

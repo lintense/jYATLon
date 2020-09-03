@@ -122,6 +122,7 @@ pathName
 
 methodName
 	: NAME
+	| BEGIN | BEFORE | BETWEEN | AFTER | EMPTY | END 
 	;
 
 aliasExp

@@ -122,11 +122,8 @@ public abstract class Block {
 		public List<ValueBlock> getValues(){
 			return blocks.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
 		}
-		/**
-		 * @return the values that belong only to this control (not included into inner ones)
-		 */
-		public List<ValueBlock> getExclusiveValues(){
-			return blocks.stream().filter(b->b.isValue()).map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
+		public boolean hasControl() {
+			return blocks.stream().anyMatch(b->b.isControl());
 		}
 	}
 	public static class PathBlock extends Block {
