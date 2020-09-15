@@ -35,6 +35,7 @@ import jyatlon.generated.YATLBaseListener;
  * - All names ending by "Arg", "Name", "Op" should be terminals and will be send to the Struct constructors as Strings
  * - All names ending by "Exp" are considered to have a terminal constructor Collection parameter argument.
  * - Always wrap Terminals ("Arg", "Name", "Op") so we can drop them.
+ * - Recursive rules must be surrounded only by tokens: binaryExp : '(' binaryExp ')'; (good) binaryExp : operator '(' binaryExp ')'; (bad)
  * - Using literals (such as ',') instead of ALIASES (such as COMMA) gives better error parsing error messages (1).
  * (1) Not my fault, this is how ANTLR works!
  * 

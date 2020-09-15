@@ -143,6 +143,13 @@ public class YATLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements Y
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitIndexOp(YATLParser.IndexOpContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitValueArg(YATLParser.ValueArgContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}

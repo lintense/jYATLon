@@ -232,6 +232,18 @@ public class YATLBaseListener implements YATLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterIndexOp(YATLParser.IndexOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIndexOp(YATLParser.IndexOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterValueArg(YATLParser.ValueArgContext ctx) { }
 	/**
 	 * {@inheritDoc}

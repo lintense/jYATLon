@@ -3,9 +3,16 @@ package jyatlon.core;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -61,11 +68,64 @@ class AppTest {
 		String obtained = getStructAsString(testName, t);
 		assertTrue(CompareString.compareFileToString(TestUtils.getResource(testName + ".txt"), obtained));
 	}
-	private String showTestHeader(String testName) {
+	@Test
+	public void testAllScripts() throws IOException {
+
+		String resourceFolder = "src/test/resources";
+		System.out.println("List of the text files in the specified directory: " + resourceFolder);
+		File[] files = TestUtils.getAllFiles(resourceFolder, "*.script.txt");
+		for(File file : files) {
+			System.out.println((">>> Testing file : " + file.getAbsolutePath()).toUpperCase());
+			List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+			Map<String,String> testMap = extractTestMap(testScriptLines);
+			Object testRoot = TestUtils.jsonToObj(testMap.get("ROOT"));	
+			String testTemplate = testMap.get("TEMPLATE");
+			String expectedResult = testMap.get("EXPECTED");
+			String actualResult = process(testTemplate, testRoot).trim();
+			assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
+		}
+	}
+	public static void main(String[] args) throws IOException {
+
+		String resourceFolder = "src/test/resources";
+		System.out.println("List of the text files in the specified directory: " + resourceFolder);
+		File[] files = TestUtils.getAllFiles(resourceFolder, "*.script.txt.tmp");
+		for(File file : files) {
+			System.out.println((">>> Testing file : " + file.getAbsolutePath()).toUpperCase());
+			List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+			Map<String,String> testMap = extractTestMap(testScriptLines);
+			Object testRoot = TestUtils.jsonToObj(testMap.get("ROOT"));	
+			String testTemplate = testMap.get("TEMPLATE");
+			String expectedResult = testMap.get("EXPECTED");
+			String actualResult = process(testTemplate, testRoot).trim();
+			assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
+		}
+	}
+	
+	private static Map<String,String> extractTestMap(List<String> lines){
+		Map<String, String> result = new HashMap<>();
+		String command = null;
+		StringBuffer sb = new StringBuffer();
+		for (String l : lines) {
+			if (l.startsWith(">>>")) {
+				if (command != null)
+					result.put(command, sb.toString().trim());
+				command = l.substring(3, l.indexOf(':')).trim();
+				sb.setLength(0);
+				sb.append(l.substring(l.indexOf(':') + 1).trim());
+			} else {
+				sb.append(l).append(System.lineSeparator());
+			}
+		}
+		if (command != null)
+			result.put(command, sb.toString().trim());
+		return result;
+	}
+	private static String showTestHeader(String testName) {
 		System.out.println("### " + testName + " ###");
 		return testName;
 	}
-	private String getStructAsString(String filename, Struct t) throws IOException {
+	private static String getStructAsString(String filename, Struct t) throws IOException {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
 		ObjectTree.dumpObject(t, ps);
@@ -73,11 +133,16 @@ class AppTest {
 		TestUtils.saveToFile(filename + ".last.txt", obtained);
 		return obtained;
 	}
-	private String process(String templateContent, Object root) throws IOException {
+	private static String process(String templateContent, Object root) throws IOException {
 		StringWriter w = new StringWriter();
 		YATL.fromString(templateContent).merge(root, w);
 		return w.toString();
 	}
+
+	
+	
+	
+	
 /* Stuff to be tested - someday
  * 
  * 1{begin ALIAS}2{end ALIAS}3%%% ==> 123

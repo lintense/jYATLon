@@ -2,11 +2,13 @@ package jyatlon.test.utilities;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +34,12 @@ public class TestUtils {
 	}
 	public static Object jsonToObj(String json) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-	    Map<String, String> map = mapper.readValue(json, Map.class);
-	    return map;
+		if (json.startsWith("{"))
+			return mapper.readValue(json, Map.class);
+		else if (json.startsWith("["))
+			return mapper.readValue(json, ArrayList.class);
+		else
+			return mapper.readValue(json, Object.class);
 	}
 	public static String objToString(Object o) {
 		return ReflectionToStringBuilder.toString(o, ToStringStyle.MULTI_LINE_STYLE);
@@ -44,6 +50,23 @@ public class TestUtils {
 		if (!f.canRead())
 			System.out.println("Cannot read file: " + f.getAbsolutePath());
 		return new File(classLoader.getResource(filename).getFile());
+	}
+	public static File[] getAllFiles(String folder, String ext) {
+		//Creating a File object for directory
+		File directoryPath = new File(folder);
+		FilenameFilter textFilefilter = new FilenameFilter(){
+			public boolean accept(File dir, String name) {
+				String[] parts = ext.toLowerCase().split("\\*");
+				String lowercaseName = name.toLowerCase();
+				return parts.length == 2 
+						? lowercaseName.startsWith(parts[0]) && lowercaseName.endsWith(parts[1])
+						: (ext.endsWith("*") 
+								? lowercaseName.startsWith(parts[0]) 
+								: lowercaseName.equals(parts[0]));
+			}
+		};
+		//List of all the text files
+		return  directoryPath.listFiles(textFilefilter);
 	}
 }
 /* MAVEN 

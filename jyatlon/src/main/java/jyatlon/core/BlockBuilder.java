@@ -469,7 +469,7 @@ public class BlockBuilder {
 		if (valueExp.operation != null && !valueExp.operation.isEmpty())
 			for (Operation o : valueExp.operation)
 				vp = vp.add(o.methodName, o.aliasName, null);
-		ValueBlock result = new ValueBlock(valueExp.unaryOp, valueExp.valueArg, valueExp.aliasName, cb, tb, vp, from);
+		ValueBlock result = new ValueBlock(valueExp.unaryOp, valueExp.indexOp, valueExp.valueArg, valueExp.aliasName, cb, tb, vp, from);
 		if (valueExp.operation != null && !valueExp.operation.isEmpty())
 			valueExp.operation.forEach(o->result.addOperation(parseOperation(o)));
 		return result;

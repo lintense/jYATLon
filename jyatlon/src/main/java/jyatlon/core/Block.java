@@ -168,6 +168,7 @@ public abstract class Block {
 	// When something can be pre-computed, put the result here
 	public static class ValueBlock extends Block {
 		final String unaryOp;
+		final String indexOp;
 		final String argName;
 		final String aliasName;
 		final CallBlock call;
@@ -175,9 +176,10 @@ public abstract class Block {
 		final List<OperationBlock> ops = new ArrayList<>();
 		final ValuePath valuePath;
 		
-		public ValueBlock(String unaryOp, String argName, String aliasName, CallBlock call, LogicalTestBlock test, ValuePath valuePath, int from) {
+		public ValueBlock(String unaryOp, String indexOp, String argName, String aliasName, CallBlock call, LogicalTestBlock test, ValuePath valuePath, int from) {
 			super(from);
 			this.unaryOp = unaryOp;
+			this.indexOp = indexOp;
 			this.argName = argName;
 			this.aliasName = aliasName;
 			this.call = call;
@@ -209,6 +211,13 @@ public abstract class Block {
 			result.addAll(call != null ? call.getValues() : Collections.emptyList());
 			result.add(this);
 			return result;
+		}
+		public String getFinalAliasName() {
+			return !ops.isEmpty()
+					? ops.get(ops.size()-1).aliasName
+					: (aliasName != null
+							? aliasName
+							: argName);
 		}
 	}
 	public static class OperationBlock extends Block {

@@ -188,6 +188,16 @@ public interface YATLListener extends ParseTreeListener {
 	 */
 	void exitValueExp(YATLParser.ValueExpContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link YATLParser#indexOp}.
+	 * @param ctx the parse tree
+	 */
+	void enterIndexOp(YATLParser.IndexOpContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YATLParser#indexOp}.
+	 * @param ctx the parse tree
+	 */
+	void exitIndexOp(YATLParser.IndexOpContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link YATLParser#valueArg}.
 	 * @param ctx the parse tree
 	 */

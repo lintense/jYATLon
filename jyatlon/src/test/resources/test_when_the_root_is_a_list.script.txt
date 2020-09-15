@@ -1,0 +1,14 @@
+>>>TEST: indexOf and sizeOf
+>>>DESC: Simple test
+>>>ROOT: [["a","b"],[1,2,3,4]]
+
+>>>TEMPLATE:
+
+{begin OUTER}
+OUTER {{indexOf($:OUTER)}} of {{sizeOf(OUTER)}} = {{OUTER}}
+{end OUTER}
+
+>>>EXPECTED:
+
+OUTER 1 of 2 = [a, b]
+OUTER 2 of 2 = [1, 2, 3, 4]

@@ -84,4 +84,11 @@ public class ValuePath {
 	public boolean containsAliasName(String alias) {
 		return Arrays.stream(this.aliases).anyMatch(x -> alias.equals(x));
 	}
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < classes.length; i++)
+			sb.append(".").append(classes[i]).append(aliases[i] != null && !aliases[i].isEmpty() ? ":" + aliases[i] : "");
+		return "{" + sb.toString().substring(1) + "}";
+			
+	}
 }

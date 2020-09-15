@@ -88,8 +88,14 @@ binaryOp
 	;
 
 valueExp
-	: (unaryOp SPACE*)? valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation*
+	: indexOp '(' valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation* SPACE* ')'
+	| (unaryOp SPACE*)? valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation*
 	| '(' SPACE* valueExp SPACE* ')'
+	;
+	
+indexOp
+	: 'indexOf'
+	| 'sizeOf'
 	;
 	
 valueArg

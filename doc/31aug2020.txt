@@ -1,0 +1,145 @@
+Need a way to "simply" express: 
+
+X=x1,x2,x3
+Y=y1,y2
+{begin (X,Y):Z} 
+Z=(x1,y1),(x1,y2),(x2,y1),(x3,y2),(x3,y1),(x3,y2)
+
+{begin (Z,Z):W}
+W=((x1,y1),(x1,y1)),((x1,y1),(x1,y2)),((x1,y1),(x1,y3)),
+((x1,y1),(x2,y1)),((x1,y1),(x2,y2)),((x1,y1),(x2,y3)),
+((x1,y2),(x1,y2)),((x1,y2),(x1,y3)),
+((x1,y2),(x2,y1)),((x1,y2),(x2,y2)),((x1,y2),(x2,y3)),
+((x1,y3),(x1,y3)),
+((x1,y3),(x2,y1)),((x1,y3),(x2,y2)),((x1,y3),(x2,y3)),
+((x2,y1),(x2,y1)),((x2,y1),(x2,y2)),((x2,y1),(x2,y3)),
+((x2,y2),(x2,y2)),((x2,y2),(x2,y3)),
+((x2,y3),(x2,y3)),
+
+// Bug with this is we have to specify the size of the couple (2)
+
+{begin (Z:Z1,Z:Z2):W with indexOf(Z1.X) < indexOf(Z2.X)}
+W= ((x1,y1),(x2,y1)),
+((x1,y1),(x2,y2)),
+((x1,y1),(x2,y3)),
+((x1,y2),(x2,y1)),
+((x1,y2),(x2,y2)),
+((x1,y2),(x2,y3)),
+((x1,y3),(x2,y1)),
+((x1,y3),(x2,y2)),
+((x1,y3),(x2,y3)),
+...
+
+{begin (Z,Z):W} = {begin (Z^2):W}
+{begin (Z^sizeOf(X):W} // sizeOf(X)=3
+W=((x1,y1),(x1,y1),(x1,y1)),((x1,y1),(x1,y1),(x1,y2)),((x1,y1),(x1,y1),(x1,y3)),
+((x1,y1),(x1,y1),(x2,y1)),((x1,y1),(x1,y1),(x2,y2)),((x1,y1),(x1,y1),(x2,y3)),
+((x1,y1),(x1,y1),(x3,y1)),((x1,y1),(x1,y1),(x3,y2)),((x1,y1),(x1,y1),(x3,y3)),
+...
+{begin W.Z}
+W.Z=(x1,y1),(x1,y1),(x1,y1)
+
+// This solves the size problem...
+
+
+{begin (Z^sizeOf(X):W with indexOf(W.Z) == indexOf(W.Z.X) } 
+W=((x1,y1),(x2,y1),(x3,y1)),((x1,y1),(x2,y1),(x3,y2)),((x1,y1),(x2,y1),(x3,y3)),
+((x1,y1),(x2,y2),(x3,y1)),((x1,y2),(x2,y1),(x3,y2)),((x1,y1),(x2,y2),(x3,y3)),
+((x1,y1),(x2,y3),(x3,y1)),((x1,y3),(x2,y1),(x3,y2)),((x1,y1),(x2,y3),(x3,y3)),
+...
+{begin W.Z}
+W.Z=(x1,y1),(x2,y1),(x3,y1),
+
+
+-=-=-
+
+// All PATH (that refer to a collection) must be inside a block
+// Rule #1 - All possible value must appear inside their begin block
+// Rule #2 - Each value or combination of value can appear only once inside its block
+// Rule #3 - A value cannot appear inside a block for which it does not exists.
+// Rule #4 - 2 blocks with the same alias are distinct. (their common aliases may have distinct values...)
+// Only when a control does not have sub control that we compute ALL values.
+
+// Let say we have a function Y=f(X) for which:
+// (X,Y)=(a,1),(b,-),(c,1),(c,2),(-,3) // bad example, a value can only exists inside a combination
+// (X,Y)=(a,1)
+{begin X}
+X=a,b,c
+{begin Y} // block Y is constraint by block X
+// BAD: (X,Y)=(a,1),(c,1),(c,2),(use empty instead of 3) // Y not really empty: 1,2
+// OR: (X,Y)=(a,1),(use empty instead for b),(c,1),(c,2) // Here empty means no value for Y given X=b
+
+{begin Y}
+Y=1,2,3
+{begin X} // block X is constraint by block Y
+// BAD: (X,Y)=(a,1),(use empty instead of b),(c,1),(c,2),(-,3) // X not really empty: 1,2
+// OR: (X,Y)=(a,1),(c,1),(c,2),(use empty instead for 3) // Here empty means no value for X given Y=3
+
+Conclusion: when computing a block values, use only/all the aliases that are linked to that block.
+- Also, compute each set separately: All X, All Y
+
+{begin (X,Y)}
+(X,Y)=(a,1),(c,1),(c,2) // No reason to use none existing values
+
+
+
+-=-=-
+
+Computing of {begin (X,Y):Z} 
+- First thing is to compute every possible values for X and Y and their possible combinations.
+Z=(a,1),...
+Z.X=a
+Z.Y=1
+
+{begin (X^sizeOf(Y)):Z}
+- Say X=a,b,c
+- First thing is to compute every possible values for X and Z
+Z=(a,a,a),...,(a,b,c),...,(c,c,c)
+Z.X=a,a,a, // indexOf(Z)==1, indexOf(Z.X)==1,2,3
+a,a,b, // indexOf(Z)==2, indexOf(Z.X)==1,2,3
+...
+// No real way to distinguish between Z.X(1), Z.X(2), etc.
+// But using the same syntax as functions and parameters will simplify parsing
+// But will not help the reader, or is it?
+
+
+// Other possibilities - not to be implemented shortly...
+{begin (X^sizeOf(Y)):Z with ((Z.X, Z.X, _) || (Z.X, _, Z.X) || (_, Z.X, Z.X)) && !(Z.X, Z.X, Z.X) } // bad!
+{begin (X^sizeOf(Y)):Z with (*, A, *, A, *) && !(*, A, *, A, *, A, *) } // weird but good! 2 similar but not 3.
+// _ means any existing value
+// * means any value or nothing
+// A matches A
+// B can match A so need a condition (B with B != A). I do not like !A...
+{begin (X^sizeOf(Y)):Z with ((A, A, _) || (A, _, A) || (_, A, A)) && !(A, A, A) } // bad!
+{begin (X^sizeOf(Y)):Z with (A, B with B != A, C with C != A && C != B) } // bad!
+{begin (X^sizeOf(Y)):Z with Z.X(A) != Z.X(B with B != A) } // weird but good! all indexes are disctinct
+{begin (Z^sizeOf(X):W with indexOf(W.Z) == indexOf(W.Z.X)}
+// Maybe we could insert Prolog in jYATLon?
+// BUG: We should not presume of a size for Z, so the above samples are not good...
+
+{{}}
+
+X
+X,Y
+(X,Y):Z
+Z.X:ZX
+(Z:Z1,Z:Z2):W
+(Z^sizeOf(X):W
+with indexOf(Z1.X) < indexOf(Z2.X)
+with indexOf(W.Z) == indexOf(W.Z.X)
+
+
+controlContent
+	: aliasExp COLON aliasName
+	: aliasExp 
+X
+X,Y
+(X,Y):Z
+Z.X:ZX
+(Z:Z1,Z:Z2):W
+(Z^sizeOf(X):W
+
+controlFilter
+
+=== Relation(CHAIN) ===
+=== Relation(CHAIN) with sizeOf(CHAIN)==1 ===

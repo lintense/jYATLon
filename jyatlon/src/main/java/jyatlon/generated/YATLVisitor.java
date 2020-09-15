@@ -119,6 +119,12 @@ public interface YATLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitValueExp(YATLParser.ValueExpContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link YATLParser#indexOp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIndexOp(YATLParser.IndexOpContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link YATLParser#valueArg}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

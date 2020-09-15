@@ -52,8 +52,6 @@ public class YATL {
 	public void merge(Object root, Writer w) {
 		BlockProcessor.merge(mainBlock, w, root);
 	}
-	
-
     private Template parseTemplate() {
     	UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream(content.getBytes()));
     	YATLLexer lexer = new YATLLexer(input);
