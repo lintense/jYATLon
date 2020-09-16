@@ -1,0 +1,21 @@
+>>>TEST: Simple conditions
+>>>DESC: 
+>>>ROOT: {"block" : {"parms" : ["a","b"]}, "empty_block" : {"parms" : []}}
+
+>>>TEMPLATE:
+
+1{begin ALIAS}2 {{$.block.parms:ALIAS}} 3{before ALIAS}b-{between ALIAS}={after ALIAS}-a{end ALIAS}4%%% ==> 1b-2 X 3-a=b-2 X 3-a4
+
+1{begin ALIAS}2 {{$.empty_block.parms:ALIAS}} 3{empty ALIAS}empty{end ALIAS}4%%% ==> 1empty4
+
+$.toString {{$.toString}}
+$.empty {{$.empty}}
+$.size {{$.size}}
+
+>>>EXPECTED:
+
+1b-2 a 3-a=b-2 b 3-a4
+1empty4
+$.toString {block={parms=[a, b]}, empty_block={parms=[]}}
+$.empty false
+$.size 2

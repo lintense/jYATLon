@@ -35,7 +35,7 @@ import jyatlon.core.Struct.Section;
 import jyatlon.core.Struct.Template;
 import jyatlon.core.Struct.Value;
 import jyatlon.core.Struct.ValueExp;
-import jyatlon.generated.YATLLexer;
+
 
 /**
  * @author linte
@@ -47,13 +47,6 @@ import jyatlon.generated.YATLLexer;
  * TODO : Missing some validations
  */
 public class BlockBuilder {
-	
-	public static final String QUOTES = "\"''\"";
-	public static final String HIDDEN_HEADER = "=$=\n";
-	public static final String ROOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT));
-	public static final String NOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NOT));
-	public static final String MINUS = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.MINUS));
-	
 	
 	private static String getStructText(String fullText, Struct s) {
 		return fullText.substring(s.from, s.to);
@@ -158,12 +151,12 @@ public class BlockBuilder {
 			if (!isValidValueBlock(subvb, pb, aliasForPathBlock))
 				throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 	}
-	private static boolean isValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
-		return BlockBuilder.ROOT.equals(vb.argName)
+	private static boolean isValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock, Set<String>> aliasForPathBlock) {
+		return Constant.ROOT.equals(vb.argName)
 		|| (pb.args.contains(vb.argName))
 		|| (pb.path != null && pb.path.path.containsClassName(vb.argName))
 		|| (pb.path != null && pb.path.path.containsAliasName(vb.argName)) //@
-		|| Utils.isString(vb.argName, BlockBuilder.QUOTES)
+		|| Utils.isString(vb.argName, Constant.QUOTES)
 		|| Utils.isNumber(vb.argName)
 		|| aliasForPathBlock.get(pb).contains(vb.argName);
 	}
@@ -269,7 +262,7 @@ public class BlockBuilder {
 		// Process path
 		CallBlock cp = parsePathExp(section.pathExp, Collections.emptyList());
 		if (section.line == null)
-			return new PathBlock(cp == null ? ROOT : cp.name, cp, Collections.emptyList(), sectionParms, section.from);
+			return new PathBlock(cp == null ? Constant.ROOT : cp.name, cp, Collections.emptyList(), sectionParms, section.from);
 
 		// Extract lines
 		List<Line> lines = section.line.stream().collect(Collectors.toList());
@@ -285,7 +278,7 @@ public class BlockBuilder {
 				
 		// Process lines
 		List<Block> blocks = parseLines(fullText, lines);
-		PathBlock pb =  new PathBlock(cp == null ? ROOT : cp.name, cp, blocks, sectionParms, section.from);
+		PathBlock pb =  new PathBlock(cp == null ? Constant.ROOT : cp.name, cp, blocks, sectionParms, section.from);
 		
 		// Compute value blocks
 		ControlBlock cb = extractControlBlock(new ControlBlock(pb, pb.from), blocks.iterator());

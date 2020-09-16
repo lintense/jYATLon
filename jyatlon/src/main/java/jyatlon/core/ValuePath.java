@@ -19,7 +19,7 @@ public class ValuePath {
 	public final Object[] objects;
 	
 	public static ValuePath getRoot(Object o) {
-		return new ValuePath(BlockBuilder.ROOT, null, o);
+		return new ValuePath(Constant.ROOT, null, o);
 	}
 	public ValuePath(String pathName, String pathAlias, Object obj) {
 		this.parent = null;
@@ -30,7 +30,7 @@ public class ValuePath {
 	protected ValuePath(ValuePath parent, String[] classes, String[] aliases, Object[] objects) {
 		assert classes.length == aliases.length && aliases.length == objects.length;
 		// Classes and objects arrays must match
-		assert IntStream.range(1, objects.length).filter(i -> objects[i].getClass().getSimpleName().equals(classes[i])).count() == objects.length - 1;
+		//assert IntStream.range(1, objects.length).filter(i -> objects[i] == null || objects[i].getClass().getSimpleName().equals(classes[i])).count() == objects.length - 1;
 		// Alias names and classes names should not intersect
 		assert !Stream.of(classes).filter(c -> new HashSet<>(Arrays.asList(aliases)).contains(c)).findAny().isPresent();
 		
@@ -40,10 +40,10 @@ public class ValuePath {
 		this.objects = objects;
 	}
 	public boolean isRoot() { // Root assigned to class so it can be redefined
-		return aliases.length == 1 && BlockBuilder.ROOT.equals(classes[0]) && aliases[0] == null;
+		return aliases.length == 1 && Constant.ROOT.equals(classes[0]) && aliases[0] == null;
 	}
 	public ValuePath add(String className, String pathAlias, Object obj) {
-		assert className != null && pathAlias != null;
+		assert className != null; // && pathAlias != null;
 		return new ValuePath(this,
 				Stream.of(Arrays.asList(this.classes), Arrays.asList(className)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.classes.length + 1]),
 				Stream.of(Arrays.asList(this.aliases), Arrays.asList(pathAlias)).flatMap(x -> x.stream()).collect(Collectors.toList()).toArray(new String[this.aliases.length + 1]),

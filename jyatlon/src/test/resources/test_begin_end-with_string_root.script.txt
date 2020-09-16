@@ -1,0 +1,16 @@
+>>>TEST: Simple conditions
+>>>DESC: 
+>>>ROOT: "ROOT"
+
+>>>TEMPLATE:
+
+1{begin ALIAS}2{end ALIAS}3%%% ==> 123
+
+1{begin ALIAS}2 {{$:ALIAS}} 3{end ALIAS}4%%% ==> 12 ROOT 34
+
+>>>EXPECTED:
+
+123
+12 ROOT 34
+
+

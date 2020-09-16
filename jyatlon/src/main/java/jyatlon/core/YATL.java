@@ -21,6 +21,7 @@ import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
 
 public class YATL {
+	
 	private final String content;
 //	private final Template template;
 	private final Block.PathBlock mainBlock;
@@ -40,10 +41,10 @@ public class YATL {
 	}
 	private YATL(String templateCcontent) {
         try {
-			this.content = BlockBuilder.HIDDEN_HEADER + templateCcontent + "\n"; // Always at least 2 lines
+			this.content = Constant.HIDDEN_HEADER + templateCcontent + "\n"; // Always at least 2 lines
 			Template t = parseTemplate();
 	    	pathBlocks = BlockBuilder.parseTemplate(content, t);
-	    	mainBlock = pathBlocks.get(BlockBuilder.ROOT);
+	    	mainBlock = pathBlocks.get(Constant.ROOT);
 		} catch (BlockBuildingError e) {
 			Point p = getErrorPosition(e.pos);
 			throw new IllegalArgumentException("line " + p.y + ":" + p.x + " " + e.getMessage(), e);

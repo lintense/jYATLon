@@ -209,6 +209,7 @@ public abstract class Block {
 			List<ValueBlock> result = new ArrayList<>();
 			ops.forEach(op -> result.addAll(op.getValues())); // will be needed before the value itself
 			result.addAll(call != null ? call.getValues() : Collections.emptyList());
+			result.addAll(test != null ? test.getValues() : Collections.emptyList());
 			result.add(this);
 			return result;
 		}
@@ -282,7 +283,7 @@ public abstract class Block {
 		public List<ValueBlock> getValues(){
 			List<ValueBlock> result = new ArrayList<>();
 			result.addAll(bexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()));
-			result.addAll(lexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()));
+			result.addAll(lexp != null ? lexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()) : Collections.emptyList());
 			return result;
 		}
 	}

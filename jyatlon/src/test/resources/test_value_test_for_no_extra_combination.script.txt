@@ -1,0 +1,18 @@
+>>>TEST: Simple conditions
+>>>DESC: ValueBlocks inside the test should not create new Combinations 
+>>>ROOT: [[1,2],[4,3]]
+
+>>>TEMPLATE:
+
+{begin X}
+{begin Y}
+20. X={{$:X}} indexOf(Y)={{indexOf(Y)}} sizeOf(Y)={{sizeOf(Y)}} {{if indexOf(X:Y)==sizeOf(Y) Y}}
+{end Y}
+{end X}
+
+>>>EXPECTED:
+
+20. X=[1, 2] indexOf(Y)=1 sizeOf(Y)=2 
+20. X=[1, 2] indexOf(Y)=2 sizeOf(Y)=2 2
+20. X=[4, 3] indexOf(Y)=1 sizeOf(Y)=2 
+20. X=[4, 3] indexOf(Y)=2 sizeOf(Y)=2 3

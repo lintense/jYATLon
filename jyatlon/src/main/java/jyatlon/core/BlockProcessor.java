@@ -41,6 +41,7 @@ import jyatlon.core.Block.ValueBlock;
  * - Ideally no throw here either. Put validation into BlockBuilder instead. to avoid run-time errors.
  * TODO : Define Matcher interface and add it as an optional parm
  * TODO : {call} should be a control, not a value?
+ * Known limitation: index operation (sizeOf, indexOf) are not allowed inside function calls. This is because the index/size is not known when the values are computed.
  */
 public class BlockProcessor {
 
@@ -117,8 +118,13 @@ public class BlockProcessor {
 //					int i = 1;
 					for (ValuePath pathCtx : paths) {
 						Combination nc = oc.addPath(pathCtx);
-						if (nc != null) // Add valid only
+						if (nc != null) {// Add valid only
 							newCombinations.add(nc);
+							
+							// Add test values inside new combination
+							if (vb.test != null)
+								nc.paths.addAll(nc.computeValues(vb.test));	
+						}
 					}
 				}
 				oldCombinations = newCombinations;
@@ -196,13 +202,13 @@ public class BlockProcessor {
 	}
 	private static void writeBlock(ValueBlock vb, Writer w, Combination combination, Map<String,Integer> indexMap, Map<String,Integer> sizeMap) throws IOException {
 		
-		boolean test = combination.computeTest(vb.test);
+		boolean test = combination.computeTest(vb.test, indexMap, sizeMap);
 		if (test) {
 			ValuePath foundPath = combination.getMatchingPath(vb.valuePath);
 			if (foundPath != null) {
-				if ("indexOf".equals(vb.indexOp))
+				if (Constant.INDEX_OF.equals(vb.indexOp))
 					w.append(Integer.toString(indexMap.get(vb.getFinalAliasName())));
-				else if ("sizeOf".equals(vb.indexOp))
+				else if (Constant.SIZE_OF.equals(vb.indexOp))
 					w.append(Integer.toString(sizeMap.get(vb.getFinalAliasName())));
 				else {
 					Object o = foundPath.getObject();

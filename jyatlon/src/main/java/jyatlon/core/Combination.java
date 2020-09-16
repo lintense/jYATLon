@@ -35,14 +35,14 @@ public class Combination {
 		this.matcher = matcher;
 	}
 	Combination callPath(ValuePath vp, List<ValuePath> pathParms) {
-		return new Combination(matcher, pathCtx != null ? pathCtx.add(vp) : vp, pathParms, combinedClasses.get(BlockBuilder.ROOT));
+		return new Combination(matcher, pathCtx != null ? pathCtx.add(vp) : vp, pathParms, combinedClasses.get(Constant.ROOT));
 	}
 	private Combination(Matcher matcher, ValuePath pathCtx, List<ValuePath> pathParms, Object o) {
 		this.pathCtx = pathCtx;
 		this.matcher = matcher;
 		initPath(pathCtx);
 		pathParms.forEach(p->initPath(p));
-		if (o != null && !isClassDefined(BlockBuilder.ROOT)) // Extract root from ctx
+		if (o != null && !isClassDefined(Constant.ROOT)) // Extract root from ctx
 			initPath(ValuePath.getRoot(o));			
 	}
 	private Combination(Combination parent){
@@ -137,10 +137,10 @@ public class Combination {
 		
 		// Init value object
 		Object obj;
-		if (Utils.isString(vb.argName, BlockBuilder.QUOTES)) // value is a String
+		if (Utils.isString(vb.argName, Constant.QUOTES)) // value is a String
 			obj = Utils.unquote(vb.argName);
-		else if (BlockBuilder.MINUS.equals(vb.unaryOp) || Utils.isNumber(vb.argName)) // value is a Number
-			obj = BlockBuilder.MINUS.equals(vb.unaryOp) ? -Double.parseDouble(vb.argName) : Double.parseDouble(vb.argName);
+		else if (Utils.isNumber(vb.argName)) // value is a Number
+			obj = Double.parseDouble(vb.argName);
 		else
 			obj = getObjectForName(vb.argName); // Should be already defined
 
@@ -161,10 +161,6 @@ public class Combination {
 		for (OperationBlock op : vb.ops)
 			result = result.stream().map(p->extractPaths(op, p)).flatMap(List::stream).collect(Collectors.toList());
 		
-		// Compute sub values inside test block
-		if (vb.test != null) 
-			result.addAll(computeValues(vb.test));
-		
 		return result;
 	}
 	private List<ValuePath> extractPaths(OperationBlock ob, ValuePath p){
@@ -172,7 +168,7 @@ public class Combination {
 		Class<?> c = o.getClass();
 		
 		Object[] parms = ob.args != null && !ob.args.isEmpty()
-				? ob.args.stream().map(vb -> getMatchingPath(vb.valuePath).getObject()).collect(Collectors.toList()).toArray()
+				? ob.args.stream().map(vb -> basicGetObject(vb)).collect(Collectors.toList()).toArray()
 				: EMPTY_PARMS;
 
 		Object x = extractObject(o, c, ob.methodName, parms);
@@ -189,7 +185,7 @@ public class Combination {
 		}
 		return result;
 	}
-	private List<ValuePath> computeValues(LogicalTestBlock lbt) {
+	public List<ValuePath> computeValues(LogicalTestBlock lbt) {
 		List<ValuePath> result = new ArrayList<>();
 		if (lbt.bexp != null)
 			for (BinaryTestBlock bt : lbt.bexp)
@@ -208,13 +204,16 @@ public class Combination {
 	public boolean isDefined(ValueBlock vb) {
 		boolean argOk = vb.ops == null || vb.ops.stream().map(op -> op.getValues()).flatMap(List::stream).allMatch(ivb -> hasMatchingPath(ivb.valuePath));
 		boolean vbOk = isAliasDefined(vb.argName)
-				|| Utils.isString(vb.argName, BlockBuilder.QUOTES)
+				|| Utils.isString(vb.argName, Constant.QUOTES)
 				|| isClassDefined(vb.argName);
 		return argOk && vbOk;
 	}
 	private static Object extractObject(Object o, Class<?> c, String methodName, Object[] parms) {
 		Object x = null;
 		try {
+			if (parms.length == 0 && Map.class.isAssignableFrom(c) && ((Map)o).containsKey(methodName))
+				return ((Map)o).get(methodName);
+			
 			Method m = getMatchingMethod(c, methodName, parms);
 			x = m != null ? m.invoke(o, parms) : c.getField(methodName).get(o);
 		} catch (Exception e) { // FIXME should log the error with all details but on a single line
@@ -224,39 +223,43 @@ public class Combination {
 		return x;
 	}
 	private static Method getMatchingMethod(Class<?> c, String methodName, Object[] parms) {
-		Method method = Arrays.stream(c.getDeclaredMethods()).filter(m -> m.getName().equals(methodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
+		Method method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(methodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		if (method == null) {
 			String getMethodName = "get" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
-			method = Arrays.stream(c.getDeclaredMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
+			method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
+		}
+		if (method == null) {
+			String getMethodName = "is" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
+			method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		}
 		return method;
 	}
 	// OR | AND
-	public boolean computeTest(LogicalTestBlock test) { // FIXME this method is too complex... 3 x 2 x 2
+	public boolean computeTest(LogicalTestBlock test, Map<String,Integer> indexMap, Map<String,Integer> sizeMap) { // FIXME this method is too complex... 3 x 2 x 2
 		if (test == null)
 			return true;
-		String op = test.op != null ? test.op : "&&";
+		String op = test.op != null ? test.op : Constant.COMPARE_AND;
 		if (test.bexp != null) {
-			if ("||".equals(op)) {
+			if (Constant.COMPARE_OR.equals(op)) {
 				for (BinaryTestBlock tb : test.bexp)
-					if (computeTest(tb))
+					if (computeTest(tb, indexMap, sizeMap))
 						return true;
 				return false;
-			} else if ("&&".equals(op)) {
+			} else if (Constant.COMPARE_AND.equals(op)) {
 				for (BinaryTestBlock tb : test.bexp)
-					if (!computeTest(tb))
+					if (!computeTest(tb, indexMap, sizeMap))
 						return false;
 				return true;
 			}
 		} else if (test.lexp != null) {
-			if ("||".equals(op)) {
+			if (Constant.COMPARE_OR.equals(op)) {
 				for (LogicalTestBlock tb : test.lexp)
-					if (computeTest(tb))
+					if (computeTest(tb, indexMap, sizeMap))
 						return true;
 				return false;
-			} else if ("&&".equals(op)) {
+			} else if (Constant.COMPARE_AND.equals(op)) {
 				for (LogicalTestBlock tb : test.lexp)
-					if (!computeTest(tb))
+					if (!computeTest(tb, indexMap, sizeMap))
 						return false;
 				return true;
 			}
@@ -267,15 +270,15 @@ public class Combination {
 		ValuePath vp = getMatchingPath(vb.valuePath);
 		Object o = vp.getObject();
 		boolean b = o != null && Boolean.valueOf(o.toString());
-		return BlockBuilder.NOT.equals(vb.unaryOp) ? !b : b;
+		return Constant.NOT.equals(vb.unaryOp) ? !b : b;
 	}
-	private double computeDoubleValue(ValueBlock vb) {
-		ValuePath vp = getMatchingPath(vb.valuePath);
-		Object o = vp.getObject();
-		return o != null ? Double.parseDouble(o.toString()) : 0d;
-	}
+//	private double computeDoubleValue(ValueBlock vb) {
+//		ValuePath vp = getMatchingPath(vb.valuePath);
+//		Object o = vp.getObject();
+//		return o != null ? Double.parseDouble(o.toString()) : 0d;
+//	}
 	// NOT EQUAL | EQUAL EQUAL | '>' | '>' EQUAL | '<' | '<' EQUAL | '<>'
-	private boolean computeTest(BinaryTestBlock test) {
+	private boolean computeTest(BinaryTestBlock test, Map<String,Integer> indexMap, Map<String,Integer> sizeMap) {
 		
 		// Single value, must be boolean
 		ValueBlock vb1 = test.values.get(0); // FIXME to be extended
@@ -284,29 +287,36 @@ public class Combination {
 		
 		// One value starts with a not, so both considered boolean
 		ValueBlock vb2 = test.values.get(1);
-		if (BlockBuilder.NOT.equals(vb1.unaryOp) || BlockBuilder.NOT.equals(vb2.unaryOp)) {
+		if (Constant.NOT.equals(vb1.unaryOp) || Constant.NOT.equals(vb2.unaryOp)) {
 			boolean b1 = computeBooleanValue(vb1);
 			boolean b2 = computeBooleanValue(vb2);
-			if ("==".equals(test.op))
+			if (Constant.COMPARE_EQUAL.equals(test.op))
 				return b1 == b2;
-			else if ("!=".equals(test.op) || "<>".equals(test.op))
+			else if (Constant.COMPARE_NOT_EQUAL1.equals(test.op) || Constant.COMPARE_NOT_EQUAL2.equals(test.op))
 				return b1 != b2;
 			else
 				throw new IllegalStateException("invalid operator " + test.op + " for boolean.");
 		}
 		
-		ValuePath vp1 = getMatchingPath(vb1.valuePath);
-		Object o1 = vp1.getObject();
-		ValuePath vp2 = getMatchingPath(vb2.valuePath);
-		Object o2 = vp2.getObject();
-		if ("==".equals(test.op))
+		Object o1 = basicGetObject(vb1, indexMap, sizeMap);
+		Object o2 = basicGetObject(vb2, indexMap, sizeMap);
+		
+//		ValuePath vp1 = getMatchingPath(vb1.valuePath);
+//		Object o1 = vp1.getObject();
+//		
+//		
+//		ValuePath vp2 = getMatchingPath(vb2.valuePath);
+//		Object o2 = vp2.getObject();
+		if (Constant.COMPARE_EQUAL.equals(test.op))
 			return matcher.isSameObject(o1, o2);
-		else if ("!=".equals(test.op) || "<>".equals(test.op))
+		else if (Constant.COMPARE_NOT_EQUAL1.equals(test.op) || Constant.COMPARE_NOT_EQUAL2.equals(test.op))
 			return !matcher.isSameObject(o1, o2);
 
 		// Number comparison
-		double d1 = computeDoubleValue(vb1);
-		double d2 = computeDoubleValue(vb2);
+//		double d1 = computeDoubleValue(vb1);
+//		double d2 = computeDoubleValue(vb2);
+		double d1 = ((Double)o1).doubleValue();
+		double d2 = ((Double)o2).doubleValue();
 		if (">".equals(test.op))
 			return d1 > d2;
 		else if (">=".equals(test.op))
@@ -319,5 +329,27 @@ public class Combination {
 		// Unknown comparison
 		throw new IllegalStateException("unknown binary operation " + test.op);
 
+	}
+	private Object basicGetObject(ValueBlock vb) {
+		if (vb.indexOp != null)
+			throw new IllegalStateException("Index operator not allowed here (as inside function calls)");
+		ValuePath vp = getMatchingPath(vb.valuePath);
+		Object o = vp != null ? vp.getObject() : null;
+		if (vb.unaryOp == null)
+			return o;
+		if (Constant.NOT.equals(vb.unaryOp))
+			return o == null || !Boolean.valueOf(o.toString());
+		if (Constant.MINUS.equals(vb.unaryOp))
+			return o==null ? 0d : -Double.parseDouble(o.toString());
+		throw new IllegalStateException("Invalid operator"); // Should never happen unless grammar is updated!
+	}
+	private Object basicGetObject(ValueBlock vb, Map<String,Integer> indexMap, Map<String,Integer> sizeMap) {
+		if (Constant.INDEX_OF.equals(vb.indexOp) && indexMap.containsKey(vb.getFinalAliasName()))
+			return Integer.toString(indexMap.get(vb.getFinalAliasName()));
+		else if (Constant.SIZE_OF.equals(vb.indexOp) && sizeMap.containsKey(vb.getFinalAliasName()))
+			return Integer.toString(sizeMap.get(vb.getFinalAliasName()));
+		else if (vb.indexOp == null)
+			return basicGetObject(vb);
+		throw new IllegalStateException("No valid index value for: " + vb.getFinalAliasName());
 	}
 }

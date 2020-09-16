@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -26,6 +25,12 @@ import jyatlon.test.utilities.TestUtils;
 
 @RunWith(JUnitPlatform.class)
 class AppTest {
+	
+	private static final String TEST_SCRIPT_EXTENSION = "*.script.txt";
+	private static final String DEBUG_SCRIPT_EXTENSION = "*.script.txt.tmp";
+	private static final String TEST_SCRIPT_ROOT = "ROOT";
+	private static final String TEST_SCRIPT_TEMPLATE = "TEMPLATE";
+	private static final String TEST_SCRIPT_EXPECTED = "EXPECTED";
 
 //	@Test
 //	void test() {
@@ -73,14 +78,14 @@ class AppTest {
 
 		String resourceFolder = "src/test/resources";
 		System.out.println("List of the text files in the specified directory: " + resourceFolder);
-		File[] files = TestUtils.getAllFiles(resourceFolder, "*.script.txt");
+		File[] files = TestUtils.getAllFiles(resourceFolder, TEST_SCRIPT_EXTENSION);
 		for(File file : files) {
 			System.out.println((">>> Testing file : " + file.getAbsolutePath()).toUpperCase());
 			List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
 			Map<String,String> testMap = extractTestMap(testScriptLines);
-			Object testRoot = TestUtils.jsonToObj(testMap.get("ROOT"));	
-			String testTemplate = testMap.get("TEMPLATE");
-			String expectedResult = testMap.get("EXPECTED");
+			Object testRoot = TestUtils.jsonToObj(testMap.get(TEST_SCRIPT_ROOT));	
+			String testTemplate = testMap.get(TEST_SCRIPT_TEMPLATE);
+			String expectedResult = testMap.get(TEST_SCRIPT_EXPECTED);
 			String actualResult = process(testTemplate, testRoot).trim();
 			assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
 		}
@@ -89,14 +94,14 @@ class AppTest {
 
 		String resourceFolder = "src/test/resources";
 		System.out.println("List of the text files in the specified directory: " + resourceFolder);
-		File[] files = TestUtils.getAllFiles(resourceFolder, "*.script.txt.tmp");
+		File[] files = TestUtils.getAllFiles(resourceFolder, DEBUG_SCRIPT_EXTENSION);
 		for(File file : files) {
 			System.out.println((">>> Testing file : " + file.getAbsolutePath()).toUpperCase());
 			List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
 			Map<String,String> testMap = extractTestMap(testScriptLines);
-			Object testRoot = TestUtils.jsonToObj(testMap.get("ROOT"));	
-			String testTemplate = testMap.get("TEMPLATE");
-			String expectedResult = testMap.get("EXPECTED");
+			Object testRoot = TestUtils.jsonToObj(testMap.get(TEST_SCRIPT_ROOT));	
+			String testTemplate = testMap.get(TEST_SCRIPT_TEMPLATE);
+			String expectedResult = testMap.get(TEST_SCRIPT_EXPECTED);
 			String actualResult = process(testTemplate, testRoot).trim();
 			assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
 		}
