@@ -1,0 +1,11 @@
+>>>TEST: Invalid numbers
+>>>DESC: Invalid numbers
+>>>ROOT: []
+
+>>>TEMPLATE:
+
+{{if 986573498657983673 <= s986573498657983674  '3'}} %%% Should be rejected!
+
+>>>EXPECTED:
+
+java.lang.IllegalArgumentException: line 2:52 unknown reference for value s986573498657983674. A value must begin with the root context, a path or an alias.

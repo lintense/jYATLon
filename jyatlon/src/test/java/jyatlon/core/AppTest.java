@@ -27,7 +27,7 @@ import jyatlon.test.utilities.TestUtils;
 class AppTest {
 	
 	private static final String TEST_SCRIPT_EXTENSION = "*.script.txt";
-	private static final String DEBUG_SCRIPT_EXTENSION = "*.script.txt.tmp";
+	private static final String DEBUG_SCRIPT_EXTENSION = "*.script.txt.tmp.txt";
 	private static final String TEST_SCRIPT_ROOT = "ROOT";
 	private static final String TEST_SCRIPT_TEMPLATE = "TEMPLATE";
 	private static final String TEST_SCRIPT_EXPECTED = "EXPECTED";
@@ -84,9 +84,14 @@ class AppTest {
 			List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
 			Map<String,String> testMap = extractTestMap(testScriptLines);
 			Object testRoot = TestUtils.jsonToObj(testMap.get(TEST_SCRIPT_ROOT));	
-			String testTemplate = testMap.get(TEST_SCRIPT_TEMPLATE);
+			String testTemplate = testMap.get(TEST_SCRIPT_TEMPLATE);	
 			String expectedResult = testMap.get(TEST_SCRIPT_EXPECTED);
-			String actualResult = process(testTemplate, testRoot).trim();
+			String actualResult;
+			try {
+				actualResult = process(testTemplate, testRoot).trim();
+			} catch (Exception e) {
+				actualResult = e.getClass().getName() + ": " + e.getMessage();
+			}
 			assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
 		}
 	}
@@ -100,9 +105,14 @@ class AppTest {
 			List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
 			Map<String,String> testMap = extractTestMap(testScriptLines);
 			Object testRoot = TestUtils.jsonToObj(testMap.get(TEST_SCRIPT_ROOT));	
-			String testTemplate = testMap.get(TEST_SCRIPT_TEMPLATE);
+			String testTemplate = testMap.get(TEST_SCRIPT_TEMPLATE);	
 			String expectedResult = testMap.get(TEST_SCRIPT_EXPECTED);
-			String actualResult = process(testTemplate, testRoot).trim();
+			String actualResult;
+			try {
+				actualResult = process(testTemplate, testRoot).trim();
+			} catch (Exception e) {
+				actualResult = e.getClass().getName() + ": " + e.getMessage();
+			}
 			assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
 		}
 	}
@@ -150,45 +160,7 @@ class AppTest {
 	
 /* Stuff to be tested - someday
  * 
- * 1{begin ALIAS}2{end ALIAS}3%%% ==> 123
- * 1{begin ALIAS}2 {{$:ALIAS}} 3{end ALIAS}4%%% ==> 12 ROOT 34
- * 1{begin ALIAS}2 {{$.block.parms:ALIAS}} 3{before ALIAS}b-{between ALIAS}={after ALIAS}-a{end ALIAS}4%%% ==> 1b-2 X 3-a=b-2 X 3-a4
- * 1{begin ALIAS}2 {{$.empty:ALIAS}} 3{empty ALIAS}empty{end ALIAS}4%%% ==> 1empty4
  * 
-Alias must exist
-{{Alias3}}
-{{$.block:Alias3}}
 
-{{Alias2}}
-{{$.block:Alias3}}
-
-Invalid reference
-{{block}}
-
-Alias to a string
-{{'te"st1':Alias1}}{{"te'st2"}}
-
-Calling any path
-{{call .../Terminal $.block}}
-
-Invalid numbers
-{{if 986573498657983673 <= s986573498657983674  '3'}} %%% Should be rejected!
-
-{{if !'"'.isEmpty '!Empty'}} %%%  Causes a new EmptyStackException !!!
-{{'test':Alias10.toString:Alias11}}
-{{if !'true'=='false' '2'}}
-{{call .../Terminal $.block:Alias3}}
-
-{{if ((1>2 || 2>3 || 3>1) && (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1))  'yes!'}}
-{{if !'"'.isEmpty '!Empty'}} %%%  Causes a new EmptyStackException !!!
-{{'test':Alias10.toString:Alias11}}
-{{if !'true'=='false' '2'}}
-{{call .../Terminal $.block:Alias3}}%%%
-
-=== .../Terminal ===
-
-{{Terminal}}!
-{{if Terminal.type=='String' '"'}}%%%
-%%% PC_5 RELATION col=1 =(PC_2, PC_4) 
  */
 }

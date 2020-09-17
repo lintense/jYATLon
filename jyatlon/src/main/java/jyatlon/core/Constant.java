@@ -29,4 +29,6 @@ public interface Constant {
 	
 	public static final String COMPARE_OR = PIPE + PIPE;
 	public static final String COMPARE_AND = AMP + AMP;
+	
+	public static final String MAP_KEY_FOR_CLASS = "CLASS";
 }

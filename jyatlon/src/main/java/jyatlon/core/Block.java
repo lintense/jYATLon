@@ -282,7 +282,7 @@ public abstract class Block {
 		}
 		public List<ValueBlock> getValues(){
 			List<ValueBlock> result = new ArrayList<>();
-			result.addAll(bexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()));
+			result.addAll(bexp != null ? bexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()) : Collections.emptyList());
 			result.addAll(lexp != null ? lexp.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList()) : Collections.emptyList());
 			return result;
 		}

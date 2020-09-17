@@ -1,0 +1,15 @@
+>>>TEST: Calling any path
+>>>DESC: Calling any path
+>>>ROOT: {"block" : {"CLASS" : "Terminal", "type" : "String", "toString" : "My value!"}}
+
+>>>TEMPLATE:
+
+{{call .../Terminal $.block}}
+=== .../Terminal ===
+{{if Terminal.type=='String' '"'}}%%%
+{{Terminal.toString}}%%%
+{{if Terminal.type=='String' '"'}}%%%
+
+>>>EXPECTED:
+
+"My value!"

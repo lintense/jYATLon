@@ -1,0 +1,14 @@
+>>>TEST: Alias must exist
+>>>DESC: 
+>>>ROOT: {"block" : []}
+
+>>>TEMPLATE:
+
+{{Alias1}}%%% This is ok since we will assign this alias
+{{$.block:Alias1}}%%% This is ok since we assign an alias
+{{Alias3}}
+
+>>>EXPECTED:
+
+java.lang.IllegalArgumentException: line 3:1 unknown reference for value Alias3. A value must begin with the root context, a path or an alias.
+

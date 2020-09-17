@@ -9,4 +9,3 @@ JUnit will automatically run all the script files.
 
 To debug a script file, change script to extension: .script.txt.tmp and execute AppTest.main()
 
- 

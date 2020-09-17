@@ -67,7 +67,10 @@ public class Combination {
 			}
 		}
 		for (int i = 0; i < vp.classes.length; i++)
-			if (vp.objects[i].getClass().getName().endsWith(vp.classes[i])) // Must be the actual class name (for now)
+			if ((Map.class.isAssignableFrom(vp.objects[i].getClass()) && ((Map)vp.objects[i]).containsKey(Constant.MAP_KEY_FOR_CLASS) 
+					? ((Map)vp.objects[i]).get(Constant.MAP_KEY_FOR_CLASS).toString() 
+					: vp.objects[i].getClass().getName())
+						.endsWith(vp.classes[i])) // Must be the actual class name (for now)
 				combinedClasses.put(vp.classes[i], vp.objects[i]); // Keep only the most recent object
 		if (vp.isRoot())
 			combinedClasses.put(vp.classes[0], vp.objects[0]);
@@ -205,6 +208,7 @@ public class Combination {
 		boolean argOk = vb.ops == null || vb.ops.stream().map(op -> op.getValues()).flatMap(List::stream).allMatch(ivb -> hasMatchingPath(ivb.valuePath));
 		boolean vbOk = isAliasDefined(vb.argName)
 				|| Utils.isString(vb.argName, Constant.QUOTES)
+				|| Utils.isNumber(vb.argName)
 				|| isClassDefined(vb.argName);
 		return argOk && vbOk;
 	}

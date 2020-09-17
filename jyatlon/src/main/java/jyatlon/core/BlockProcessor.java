@@ -27,7 +27,8 @@ import jyatlon.core.Block.ValueBlock;
  * Set Notepad to Smalltalk/SQL for nice coloring
  * Set Notepad to Pascal for all controls in green
  * Parameters...
- * TODO : indexOf, sizeOf : avoid redundant compute + persist index and size
+ * TODO : indexOf, sizeOf : cannot be used inside operations...
+ * TODO : vb.test valueBlocks are only computed when vb is computed so we cannot define alias inside test?
  * TODO : Combination alias and class map should be the same (but check initPath for duplicated class names) i.e Relation/Relation
  * TODO : {begin (X,Y):Z}(x1,y1),(x1,y2),(x1,y3),(x2,y1),(x2,y2),(x2,y3)
  * {begin X}{begin Y}x1,y1,y2,y3,x2,y1,y2,y3

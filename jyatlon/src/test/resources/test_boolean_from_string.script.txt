@@ -1,0 +1,18 @@
+>>>TEST: Boolean from String
+>>>DESC: Invalid numbers
+>>>ROOT: []
+
+>>>TEMPLATE:
+
+{{if ((1>2 || 2>3 || 3>1) && (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1)&& (1>2 || 2>3 || 3>1))  'yes!'}}
+{{if !'"'.isEmpty '!Empty'}} %%%  Causes a new EmptyStackException !!!
+{{'test':Alias10.toString:Alias11}}
+{{if !'true'=='false' '2'}}
+{{!'true'}} {{!"false"}}
+
+>>>EXPECTED:
+
+yes!
+!Empty test
+2
+true false

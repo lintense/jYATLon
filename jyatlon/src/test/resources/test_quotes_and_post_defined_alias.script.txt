@@ -1,0 +1,13 @@
+>>>TEST: Testing quotes
+>>>DESC: Testing double quote inside single quote and vice et versa
+>>>ROOT: []
+
+>>>TEMPLATE:
+
+{{Alias2}} {{Alias1}}
+{{'te"st1':Alias1}}_{{"te'st2":Alias2}}
+
+>>>EXPECTED:
+
+te'st2 te"st1
+te"st1_te'st2

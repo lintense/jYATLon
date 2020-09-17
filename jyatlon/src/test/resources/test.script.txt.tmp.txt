@@ -1,0 +1,11 @@
+>>>TEST: Define alias inside test
+>>>DESC: Define an alias inside a test block
+>>>ROOT: []
+
+>>>TEMPLATE:
+
+{{if $:X X}}
+
+>>>EXPECTED:
+
+[]

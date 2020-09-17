@@ -1,0 +1,51 @@
+>>>TEST: Using sizeOf inside operation
+>>>DESC: Be able to use indexOf and sizeOf inside operation.
+The problem is we need all the values precomputed before we can iterate and provide index and size...
+NOTE: If X is dependent of index/size of X, then the chain cannot return a collection since only ONE value of X can be associated with that index/size.
+Need to implement a way to emulate a 'call' function from a Map. Use get.
+
+>>>ROOT: {"coll" : ["a","b","c"], "1" : "aa", "2" : "bb", "3" : ["c1", "c2", "c3"]}
+
+>>>TEMPLATE:
+
+{{$.get(indexOf(X)):X}}%%% Must return a single (non null) value that matches X for that index. No way to determine the size of X but any error will stop the process since that index would NOT be valid.
+{{$.get(indexOf(X)).getX:X}}%%% Same as above, only ONE value can be returned. The value MUST respond to getX that MUST return a value. So we can iterate and stop at any error.
+{{$.get(sizeOf(X)):X}}%%% MUST return a collection with the size that matches.
+
+{begin X}
+X={{$.coll:X}}
+{begin Y}
+Y={{$.get(indexOf($.coll:X)):Y}}%%% It is possible to compute the maximum size of X (which is the size of $ in this case)
+{end Y}
+{end X}
+
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Chain operation returning collections
+>>>DESC: Need to validate when many operations are chained and each of them returns a collection.
+- Each operation that returns a collection MUST have an associated alias.
+- Each of these operation will create a new combination for the corresponding alias.
+
+>>>ROOT: {"coll4" : [
+{"coll3" : [{"coll2" : [101,102]},{"coll2" : [103,104]},{"coll2" : [105,106]}]},
+{"coll3" : [{"coll2" : [201,202]},{"coll2" : [203,204]},{"coll2" : [205,206]}]},
+{"coll3" : [{"coll2" : [301,302]},{"coll2" : [303,304]},{"coll2" : [305,306]}]},
+{"coll3" : [{"coll2" : [401,402]},{"coll2" : [403,404]},{"coll2" : [405,406]}]}
+]}
+
+>>>TEMPLATE:
+
+{begin A1}
+{begin A2}
+{begin A3}
+{{$.coll4:A1.coll3:A2.coll2:A3}}
+{end A3}
+{end A2}
+{end A1}
+
+
+>>>EXPECTED:
+
+-=-=-
