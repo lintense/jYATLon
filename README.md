@@ -31,12 +31,11 @@ yatl.merge(root, writer); // The same as Velocity!
 ### Tutorial
 - YATL is intended to be the simplest templating language possible, period.
 - As a general rule, [values](#value), [commands](#command) and [comments](#comment) begin and end on the same line.
-- Also, be aware that spaces are not allowed inside [value expressions](#value), [commands](#command) and [paths](#path).
 - YATL is particularly well suited for working with tree data structures and to generate code.
 
 #### <a id="root"></a>Root context
 - The root context aka `$` refers to the object that is provided when launching the template engine. (See [running the program](#running) above)
-- It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL **do not** and **will not** implement complex computations...
+- It is recommended that you have full control over the root object so you can implement any special formating services that you may need. YATL **does not** and **will not** implement complex computations...
 
 #### <a id="value"></a>Value
 - A value is an expression enclosed in **double braces** `{{` ... `}}`. The so called [mustache](https://mustache.github.io/)!
