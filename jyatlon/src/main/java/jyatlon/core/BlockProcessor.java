@@ -110,11 +110,11 @@ public class BlockProcessor {
 				newCombinations = new ArrayList<>();
 				for (Combination oc : oldCombinations) {
 					List<ValuePath> paths = oc.computeValues(vb);
-					if (paths.size() > 1 && aliases.isEmpty())
-						throw new IllegalStateException("Value that return a collection must be inside a block: " + vb.argName);
-					else if (paths.size() > 1 && !aliases.contains(vb.getFinalAliasName()))
+					if (paths.size() > 1 && !aliases.contains(vb.getFinalAliasName()))
 						throw new IllegalStateException("Value that return a collection must be inside a block: " + vb.valuePath.toString());
-					// Relation.parms:PARM.index is ok since the split comes from PARM
+//					else if (paths.size() > 1 && !aliases.contains(vb.getFinalAliasName()))
+//						throw new IllegalStateException("Value that return a collection must be inside a block: " + vb.valuePath.toString());
+//					// Relation.parms:PARM.index is ok since the split comes from PARM
 					// 
 //					int i = 1;
 					for (ValuePath pathCtx : paths) {

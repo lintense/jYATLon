@@ -60,12 +60,12 @@ public class ValuePath {
 	public Object getObject() {
 		return objects[objects.length - 1];
 	}
-	public Object getObjectForName(String name) {
-		for (int i = classes.length; i > 0; i--)
-			if (name.equals(classes[i-1]) || name.equals(aliases[i-1]))
-				return objects[i-1];
-		throw new IllegalArgumentException("The name '" + name + "' cannot be found in the path");
-	}
+//	public Object getObjectForName(String name) {
+//		for (int i = classes.length; i > 0; i--)
+//			if (name.equals(classes[i-1]) || name.equals(aliases[i-1]))
+//				return objects[i-1];
+//		throw new IllegalArgumentException("The name '" + name + "' cannot be found in the path");
+//	}
 //	public Object getObjectForName(String name, Object defaultObject) {
 //		for (int i = classes.length; i > 0; i--)
 //			if (name.equals(classes[i-1]) || name.equals(aliases[i-1]))

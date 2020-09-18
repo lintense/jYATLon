@@ -1,3 +1,51 @@
+
+How do I test code that should never be executed?
+
+I think it is wrong to hide the so called 
+in order to attemp 100% coverage.
+Reason for having those throws can be to help debugging are in direct line with a fail-fast approach.
+Full coverage does not ensure proper testing anyway.
+Also, having these none covered stuff can be helpful to orient further design.
+Stop hiding the errors and start fixing the problems!
+
+
+>>>TEST: 
+>>>DESC: 
+>>>ROOT: 
+>>>TEMPLATE:
+>>>EXPECTED:
+
+-=-=-
+
+
+-=-=-
+
+>>>TEST: Test vs value
+>>>DESC: Test what happen when the test of a value is required to compute the value itself.
+Also, test the opposite!
+>>>ROOT: [10,20,30]
+>>>TEMPLATE:
+
+{begin X}
+{{if $:X>15 X}}
+{{if Y>25 $:Y}}
+{end X}
+
+>>>EXPECTED:
+20
+30
+30
+
+-=-=-
+
+>>>TEST: Hello Wrold
+>>>DESC: Introduction to YATL
+>>>ROOT: "World"
+>>>TEMPLATE: {begin ALIAS}Hello {{$:ALIAS}}!{end ALIAS}
+>>>EXPECTED: Hello World!
+
+-=-=-
+
 >>>TEST: Using sizeOf inside operation
 >>>DESC: Be able to use indexOf and sizeOf inside operation.
 The problem is we need all the values precomputed before we can iterate and provide index and size...
@@ -49,3 +97,33 @@ Y={{$.get(indexOf($.coll:X)):Y}}%%% It is possible to compute the maximum size o
 >>>EXPECTED:
 
 -=-=-
+
+{begin FUNC_TYPE}
+{begin PARM }
+{{Relation.parms:PARM}}
+{between PARM}
+, %%%
+{end PARM}
+{end FUNC_TYPE }
+
+
+{begin CHAIN}%%% Is this needed?
+{{call Relation($.chains:CHAIN) $.block}}%%% Call Main entry block
+{end CHAIN}
+
+=== Relation(CHAIN) === %%% Main entry is a relation
+~{{$.block:X}}
+
+{begin FUNC_TYPE}
+{begin PARM }
+{begin PARM_TYPE}
+public {{CHAIN.possibleMainOutputTypes(Relation):FUNC_TYPE}} func(%%%
+{{CHAIN.possibleMainOutputTypes(PARM):PARM_TYPE}} p{{Relation.parms:PARM}}%%%
+);
+{{indexOf(PARM)}}
+{{indexOf(FUNC_TYPE)}}
+{end PARM_TYPE}
+{between PARM}
+, %%%
+{end PARM}
+{end FUNC_TYPE }

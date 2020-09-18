@@ -22,6 +22,8 @@ import jyatlon.generated.YATLParser;
 
 public class YATL {
 	
+	public static final String HIDDEN_HEADER = "=$=\n";
+	
 	private final String content;
 //	private final Template template;
 	private final Block.PathBlock mainBlock;
@@ -41,8 +43,8 @@ public class YATL {
 	}
 	private YATL(String templateCcontent) {
         try {
-			this.content = Constant.HIDDEN_HEADER + templateCcontent + "\n"; // Always at least 2 lines
-			Template t = parseTemplate();
+			this.content = getActualContent(templateCcontent);
+			Template t = parseTemplate(content);
 	    	pathBlocks = BlockBuilder.parseTemplate(content, t);
 	    	mainBlock = pathBlocks.get(Constant.ROOT);
 		} catch (BlockBuildingError e) {
@@ -53,8 +55,9 @@ public class YATL {
 	public void merge(Object root, Writer w) {
 		BlockProcessor.merge(mainBlock, w, root);
 	}
-    private Template parseTemplate() {
-    	UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream(content.getBytes()));
+    static Template parseTemplate(String templateContent) { // Used for testing
+    	String actualTemplate = getActualContent(templateContent); // Always at least 2 lines
+    	UnbufferedCharStream input = new UnbufferedCharStream(new ByteArrayInputStream(actualTemplate.getBytes()));
     	YATLLexer lexer = new YATLLexer(input);
         lexer.setTokenFactory(new CommonTokenFactory(true));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -86,11 +89,17 @@ public class YATL {
 		return (Template)struct;
 
     }
+
     /**
      * @param pos
-     * Note: Slow processing, do not use except for error handling!
+     * Note: Slow processing, use only for error handling!
      * @return
      */
+    private static String getActualContent(String templateContent) {
+    	return templateContent.startsWith(HIDDEN_HEADER) 
+    			? templateContent 
+    			: HIDDEN_HEADER + templateContent + "\n"; // Always at least 2 lines
+    }
     private Point getErrorPosition(int pos) {
     	String[] lines = content.split("\n");
     	int eol = content.indexOf(lines[1])-lines[0].length(); // Always at least 2 lines
@@ -104,3 +113,13 @@ public class YATL {
     	return new Point(x-pos+1, y);
     }
 }
+/*
+Have a nice mechanism for error message handling ERROR_P1_P2
+Use a writer when compiling instead of loggers.
+Detect ~ cannot be used inside COMMANDS and VALUES (except {begin '...'})
+Detect any { before the enclosing }
+When parsing {, could check for valid COMMAND names to avoid using ~
+Have a trace to follow the order of calling to debug the command calls
+Controls & commands in error are printed as is for convenience so it is easy to find the error in the script.
+Regex to validate alias names. [A-Za-z_0-9]*
+*/
