@@ -47,6 +47,18 @@ public interface YATLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitControlExp(YATLParser.ControlExpContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link YATLParser#tupleExp}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTupleExp(YATLParser.TupleExpContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link YATLParser#tupleValue}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTupleValue(YATLParser.TupleValueContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link YATLParser#controlOp}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

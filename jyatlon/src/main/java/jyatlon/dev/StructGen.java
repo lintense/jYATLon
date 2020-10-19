@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
  * SRP: This class will generate the Struct class by using Reflection on YATLParser.
  * Struct.java must be generated in order to keep in sync with the template grammar.
  * This will insure that the processing of the syntax is always up to date.
+ * TODO : states and methods should be in alpha order to be easily comparable between versions
  */
 public class StructGen {
 

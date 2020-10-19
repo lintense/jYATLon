@@ -8,6 +8,71 @@ Full coverage does not ensure proper testing anyway.
 Also, having these none covered stuff can be helpful to orient further design.
 Stop hiding the errors and start fixing the problems!
 
+-=-=-
+
+TO_TEST: What happen when using expressions containing many aliases?
+!true==false
+X (ok)
+X,Y (syntax sugar: wait)
+(X,Y):Z 
+Z.X:ZX
+(Z:Z1,Z:Z2):W
+(Z^sizeOf(X)):W
+with indexOf(Z1.X) < indexOf(Z2.X)
+
+### FILTERING ###
+
+{begin (X^sizeOf(Y)):Z with any (*A*A*) && no (*A*A*A*) } // weird but good! 2 similar but not 3.
+(*A*A*) = at least 2 similar
+(*A,A*) = 2 consecutive similar
+all (*A,A*) = all (*A*A*) = all consecutives are similar
+no (*A,A*) = no consecutives are similar
+(A*A) = first and last are similar
+no (A*A) = first and last are not similar
+// _ means any existing value
+// * means any value or nothing
+// A matches A
+
+// B can match A so need a condition (B with B != A). I do not like !A...
+(*A*B*) && A<B there is an A before B that is smaller (Numerical only?)
+(*A*B*) && no A>B no A before B is larger
+(*A,B*) && A!=B 
+2x (*A*A*) && all indexOf(A)<indexOf(B) = exactly 2 pairs are similar as in (1,1,2,3),(1,2,2,3),...
+	(*A*B*) && index
+
+($:X^sizeOf(X)):Z with (*A*B*) && indexOf(A)<indexOf(B)
+
+withExp
+	: matchingExp (logicalOp matchingExp)
+	;
+matchingExp
+	: (notOp SPACE+)? '(' matchingOp? aliasName (matchingOp aliasName)* matchingOp? ')' // default notOp = any
+	: (notOp SPACE+)? binaryExp // default notOp = all
+	;
+matchingOp
+	: '*' | ','
+	;
+notOp
+	: 'no' | 'all' | 'any' | '1x' | '2x' // any is the default for (...), all is the default for <>=
+	;
+
+-=-=-
+
+>>>TEST: Deffered blocks
+>>>DESC: This is ok because we do not need all the X to start processing the X block.
+The we can compute X when processing the Y block
+>>>ROOT: 
+>>>TEMPLATE:
+
+{begin X}
+{begin Y}
+{{Y.getY:X}}
+{end Y}
+{end X}
+
+>>>EXPECTED:
+
+-=-=-
 
 >>>TEST: 
 >>>DESC: 
@@ -17,6 +82,99 @@ Stop hiding the errors and start fixing the problems!
 
 -=-=-
 
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
+>>>TEMPLATE:
+{begin ($,$,$):Z with $.filter(Z)}%%% An explicit filter would be better but out of scope for now...
+{{Z}}%%%
+{between Z},%%%
+{after Z}
+
+{end Z}
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
+>>>TEMPLATE:
+{begin ($:X,X,X):Z}
+{{Z}}
+{between Z},%%%
+{after Z}
+{end Z}
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
+>>>TEMPLATE:
+{begin ($:X,X,X):Z}
+{{Z}}
+{begin Z.X}({{indexOf(Z.X)}})-{{Z.X}}{between Z.X},{end Z.X}
+{between Z},{after Z}{end Z}
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
+>>>TEMPLATE:
+{begin ($:X1, X1:X2, X2:X3):Z}
+{{Z}}
+{{X1}}-{{X2}}-{{X3}}
+{between Z},{after Z}{end Z}
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
+>>>TEMPLATE:
+{begin ($:X^sizeOf(X)):Z}
+{{Z}}
+{end Z}
+{begin (X^sizeOf($:X):Z}
+{{Z}}
+{end Z}
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
+>>>TEMPLATE:
+{begin ($:X^sizeOf(X)):Z}
+{{Z}}
+{end Z}
+{begin (X^sizeOf($:X):Z}
+{{Z}}
+{end Z}
+>>>EXPECTED:
+
+-=-=-
+
+>>>TEST: Alias list in begin
+>>>DESC: A simple rewriting rule that remove some lines from the script.
+Not necessary for now but usefull when the script will get bigger.
+>>>ROOT: {"coll4" : [
+{"coll3" : [{"coll2" : [101,102]},{"coll2" : [103,104]},{"coll2" : [105,106]}]},
+{"coll3" : [{"coll2" : [201,202]},{"coll2" : [203,204]},{"coll2" : [205,206]}]},
+{"coll3" : [{"coll2" : [301,302]},{"coll2" : [303,304]},{"coll2" : [305,306]}]},
+{"coll3" : [{"coll2" : [401,402]},{"coll2" : [403,404]},{"coll2" : [405,406]}]}
+]}
+>>>TEMPLATE:
+{begin X,Y,Z}
+{{index(X)}}{{index(Y)}}{{index(Z)}}{{X}}{{Y}}{{Z}}
+{end X,Y,Z}
+>>>EXPECTED:
 
 -=-=-
 

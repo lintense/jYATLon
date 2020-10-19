@@ -68,6 +68,26 @@ public interface YATLListener extends ParseTreeListener {
 	 */
 	void exitControlExp(YATLParser.ControlExpContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link YATLParser#tupleExp}.
+	 * @param ctx the parse tree
+	 */
+	void enterTupleExp(YATLParser.TupleExpContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YATLParser#tupleExp}.
+	 * @param ctx the parse tree
+	 */
+	void exitTupleExp(YATLParser.TupleExpContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link YATLParser#tupleValue}.
+	 * @param ctx the parse tree
+	 */
+	void enterTupleValue(YATLParser.TupleValueContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link YATLParser#tupleValue}.
+	 * @param ctx the parse tree
+	 */
+	void exitTupleValue(YATLParser.TupleValueContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link YATLParser#controlOp}.
 	 * @param ctx the parse tree
 	 */

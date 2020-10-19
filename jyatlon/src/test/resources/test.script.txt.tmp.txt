@@ -1,21 +1,12 @@
 
->>>TEST: Path parameters
->>>DESC: It is possible to pass parameters to path
->>>ROOT: {"thing" : {"CLASS" : "Thing", "name" : "My name", "UpperName" : "My Upper name"}, "parms" : [1,2,3]}
+>>>TEST: Simple tupples
+>>>DESC: Create new combinations based on tuples
+>>>ROOT: [1,2,3]
 >>>TEMPLATE:
+{begin ($,$,$):Z}
+{{Z}}%%%
+{between Z},%%%
+{after Z}
 
-{begin PARM}
-Parm={{PARM}}
-{{call Thing($.parms:PARM) $.thing}}%%% Call Main entry block
-{end PARM}
-=== Thing(PARM) === %%% Main entry is a relation
-Name={{Thing.name}} UpperName={{Thing.UpperName}} Parm={{PARM}}
-
+{end Z}
 >>>EXPECTED:
-
-Parm=1
-Name=My name UpperName=My Upper name Parm=1
-Parm=2
-Name=My name UpperName=My Upper name Parm=2
-Parm=3
-Name=My name UpperName=My Upper name Parm=3

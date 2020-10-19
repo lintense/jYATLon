@@ -2,11 +2,14 @@
 // Define a grammar called Hello
 // https://www.antlr.org/tools.html
 // Instructions:
+// Use SPACE* instead of SPACE?
 // All names ending by "Arg", "Name", "Op" should be terminals and will be send to constructor as a String
 // All names ending by "Exp" are considered to have a terminal Collection arg. (NOT needed anymore)
+// Recursive Rule must surrounded only by tokens: binaryExp : '(' binaryExp ')'; (good) binaryExp : operator '(' binaryExp ')'; (bad)
 // Always wrap Terminals so we can drop them
 // Using 'literal' in expression will provide better error messages (at least is seem so...)
 // https://stackoverflow.com/questions/22415208/get-rid-of-token-recognition-error
+// When done, run the StructGen.java class and copy the result into Struct.java
 
 grammar YATL;
 
@@ -15,7 +18,7 @@ template
 	;
 	
 section
-	: SPACE* SECTIONSEP SPACE* pathExp aliasExp? SPACE* SECTIONSEP SPACE* (commentOp rawText*)* NEWLINE line*
+	: SPACE* SECTIONSEP SPACE* pathExp SPACE* aliasExp? SPACE* SECTIONSEP SPACE* (commentOp rawText*)* NEWLINE line*
 	| EQUAL ROOT EQUAL NEWLINE line*
 	;
 	
@@ -36,7 +39,16 @@ escapedChar
 //	;
 
 controlExp
-	: controlOp SPACE+ aliasName SPACE* RCURL
+	: controlOp SPACE+ (tupleExp SPACE*)? aliasName SPACE* RCURL
+	;
+
+tupleExp
+	: '(' SPACE* tupleValue (SPACE* ',' SPACE* tupleValue) SPACE* ')' SPACE* COLON
+	| '(' SPACE* tupleValue SPACE* '^' SPACE* valueExp ')' SPACE* COLON
+	;
+	
+tupleValue
+	: valueArg (SPACE* COLON SPACE* aliasName)? SPACE* operation*
 	;
 
 controlOp
@@ -62,7 +74,7 @@ ifExp
 	;
 
 callExp
-	: CALL SPACE+ pathExp argExp?
+	: CALL SPACE+ pathExp SPACE* argExp?
 	;
 
 logicalExp
@@ -103,11 +115,11 @@ valueArg
 	;
 	
 operation 
-	: DOT SPACE? methodName argExp? (SPACE? COLON SPACE? aliasName)?
+	: DOT SPACE* methodName SPACE* argExp? (SPACE* COLON SPACE* aliasName)?
 	;
 
 argExp
-	: SPACE? '(' (SPACE? valueExp (SPACE? COMMA SPACE? valueExp)*)? SPACE? ')'
+	: '(' (SPACE* valueExp (SPACE* COMMA SPACE* valueExp)*)? SPACE* ')'
 	;
 
 pathExp
@@ -132,7 +144,7 @@ methodName
 	;
 
 aliasExp
-	: SPACE? '(' SPACE? aliasName (SPACE? COMMA SPACE? aliasName)* ')'
+	: '(' SPACE* aliasName (SPACE* COMMA SPACE* aliasName)* ')'
 	;
 	
 aliasName

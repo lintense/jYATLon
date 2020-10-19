@@ -26,6 +26,11 @@ import jyatlon.core.Block.ValueBlock;
  * Add into doc:
  * Set Notepad to Smalltalk/SQL for nice coloring
  * Set Notepad to Pascal for all controls in green
+ * 
+ * String can only be compared using == and !=
+ * Number can have >=, <=, ==, !=, <>
+ * Operations such as +, -, * and / are not allowed
+ * 
  * Parameters...
  * TODO : indexOf, sizeOf : cannot be used inside operations...
  * TODO : vb.test valueBlocks are only computed when vb is computed so we cannot define alias inside test?
