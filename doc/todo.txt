@@ -140,7 +140,7 @@ The we can compute X when processing the Y block
 {begin ($:X^sizeOf(X)):Z}
 {{Z}}
 {end Z}
-{begin (X^sizeOf($:X):Z}
+{begin (X^sizeOf($:X)):Z}
 {{Z}}
 {end Z}
 >>>EXPECTED:

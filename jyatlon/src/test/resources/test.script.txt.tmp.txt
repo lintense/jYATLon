@@ -2,11 +2,14 @@
 >>>TEST: Simple tupples
 >>>DESC: Create new combinations based on tuples
 >>>ROOT: [1,2,3]
+
 >>>TEMPLATE:
+
 {begin ($,$,$):Z}
 {{Z}}%%%
 {between Z},%%%
 {after Z}
 
 {end Z}
+
 >>>EXPECTED:
