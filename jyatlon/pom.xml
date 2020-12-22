@@ -1,7 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>jyatlon</groupId>
-  <artifactId>core</artifactId>
   <packaging>jar</packaging>
   <version>0.0.1-SNAPSHOT</version>
   <name>jyatlon</name>
@@ -15,7 +14,7 @@
   	<dependency>
   		<groupId>org.antlr</groupId>
   		<artifactId>antlr4-runtime</artifactId>
-  		<version>4.7.2</version>
+  		<version>4.9</version>
   	</dependency>
   	<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 	<dependency>
@@ -85,7 +84,7 @@
 		<plugin>
 		    <groupId>org.antlr</groupId>
 		    <artifactId>antlr4-maven-plugin</artifactId>
-		    <version>4.7.2</version>
+		    <version>4.9</version>
 		    <configuration>
 		    	<listener>true</listener>
 		    	<visitor>true</visitor>
@@ -257,4 +256,5 @@
        </build>
     </profile>
   </profiles>
+  <artifactId>Jyatlon</artifactId>
 </project>
