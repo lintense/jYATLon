@@ -143,7 +143,10 @@ public class Combination {
 		if (Utils.isString(vb.argName, Constant.QUOTES)) // value is a String
 			obj = Utils.unquote(vb.argName);
 		else if (Utils.isNumber(vb.argName)) // value is a Number
-			obj = Double.parseDouble(vb.argName);
+			if (vb.argName.indexOf('.') > 0)
+				obj = Double.valueOf(vb.argName);
+			else
+				obj = Integer.valueOf(vb.argName);
 		else
 			obj = getObjectForName(vb.argName); // Should be already defined
 
@@ -343,8 +346,13 @@ public class Combination {
 			return o;
 		if (Constant.NOT.equals(vb.unaryOp))
 			return o == null || !Boolean.valueOf(o.toString());
-		if (Constant.MINUS.equals(vb.unaryOp))
-			return o==null ? 0d : -Double.parseDouble(o.toString());
+		if (Constant.MINUS.equals(vb.unaryOp) && o == null)
+			return 0d;
+		int i = Integer.parseInt(o.toString());
+		double d = Double.parseDouble(o.toString());
+		o = (double)i == d 
+			? Integer.valueOf(Constant.MINUS.equals(vb.unaryOp) ? -i : i) 
+			: Double.valueOf(Constant.MINUS.equals(vb.unaryOp) ? -d : d);
 		throw new IllegalStateException("Invalid operator"); // Should never happen unless grammar is updated!
 	}
 	private Object basicGetObject(ValueBlock vb, Map<String,Integer> indexMap, Map<String,Integer> sizeMap) {

@@ -1,0 +1,21 @@
+<project name="OCL" basedir="..">
+
+	<!-- ==================== Generate OCLStruct.java ========================= -->
+	<target name="maven_gen_struct" description="Generate Struct.java">
+		<echo level="info" message="Begin generation of Struct..."/>
+		<echo level="info" message="project_bin=${project_bin}"/>
+		<echo level="info" message="compile_classpath=${compile_classpath}"/>
+		<java fork="true" failonerror="true" classname="jyatlon.dev.GenFile">
+			<classpath>
+				<pathelement location="${project_bin}"/>
+				<path refid="maven.compile.classpath"/>
+			</classpath>
+			<arg value="${project_src}"/>
+			<arg value="jyatlon.dev.StructGen"/>
+			<arg value="jyatlon.core.Struct"/>
+			<jvmarg value="-showversion"/>
+		</java>
+		<echo level="info" message="Done generating Struct..."/>
+	</target>
+	
+</project>
