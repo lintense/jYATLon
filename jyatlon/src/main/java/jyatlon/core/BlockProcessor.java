@@ -3,6 +3,7 @@ package jyatlon.core;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -32,7 +33,7 @@ import jyatlon.core.Block.ValueBlock;
  * TODO : Combination alias and class map should be the same (but check initPath for duplicated class names) i.e Relation/Relation
  * TODO : {begin (X,Y):Z}(x1,y1),(x1,y2),(x1,y3),(x2,y1),(x2,y2),(x2,y3)
  * {begin X}{begin Y}x1,y1,y2,y3,x2,y1,y2,y3
- * TODO : {call .../A(X)|B(Y)|C(Z) vb} all relative or all absolute
+ * TODO : {call .../A(X)|B(Y)|C(Z) vb} all relative or all absolute (ok)
  * TODO : === Relation(CHAIN) with sizeOf(CHAIN)==1 ===
  * TODO : Map key access and 'class' key
  * TODO : Revise doc for missing stuff (parms, )
@@ -216,8 +217,10 @@ public class BlockProcessor {
 					if (vb.call == null)
 						w.append(o.toString());
 					else { // TODO called path must match actual object class or interface?
-						PathBlock pb = vb.call.getBlockToCall();
-						writeBlock(vb.call.getBlockToCall(), w, combination, new ValuePath(pb.path.path.getClassName(), pb.path.path.getAliasName(), o));
+						PathBlock pb = vb.call.getBlockToCall(foundPath);
+						if (pb == null)
+							throw new IllegalStateException("No path found to match object: " + Utils.getClassName(o) + ". Possible suffixes are: " + Arrays.toString(vb.call.getPossibleCalls()));
+						writeBlock(pb, w, combination, new ValuePath(pb.path.getClassName(), pb.path.getAliasName(), o));
 					}
 				}
 			} else if (foundPath == null) {

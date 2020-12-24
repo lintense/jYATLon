@@ -1,6 +1,7 @@
 package jyatlon.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,33 +100,43 @@ public class BlockBuilder {
 		// Compute the destination of each value call blocks
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().filter(vb->vb.call != null).forEach(vb->{
 			
-			// If the call is absolute we check only for an exact match
-			// First check if there exist an unambiguous matching absolute destination
-			PathBlock toCall = null;
-			if (!vb.call.isRelative) {
-				toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
-				if (toCall == null)
-					throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
-			} else {
-				
-				
-				List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
-				
-				// Add parent block path to call block if call is relative
-				CallBlock newCB = pb.path != null ? new CallBlock(pb.path.path.add(vb.call.path), pb.path.isRelative, args, vb.from) : vb.call;
-				
-				// If new call block is absolute (as by parent) then check again for an exact match
-				toCall = newCB.isRelative
-						? getRelativePathBlockToCall(pathBlocks, newCB)
-						: getAbsolutePathBlockToCall(pathBlocks, newCB);
+			vb.call.paths.forEach(path->{
 
-			}
-			if (toCall == null)
-				throw new BlockBuildingError("cannot find any path for " + vb.call.name, vb.from);
-
-			// TODO Add detection for possible infinite loop (warn user)
+				// If the call is absolute we check only for an exact match
+				// First check if there exist an unambiguous matching absolute destination
+				List<PathBlock> toCall;
+				if (!vb.call.isRelative) {
+					toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
+//					if (toCall == null)
+//						throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
+				} else {
+					
+					
+					List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
+					
+					// Add parent block path to call block if call is relative
+					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), pb.isRelative, args, vb.from) : vb.call;
+					
+					// If new call block is absolute (as by parent) then check again for an exact match
+					toCall = newCB.isRelative
+							? getRelativePathBlockToCall(pathBlocks, newCB)
+							: getAbsolutePathBlockToCall(pathBlocks, newCB);
+	
+				}
+//				if (toCall == null)
+//					throw new BlockBuildingError("cannot find any path for " + vb.call.name, vb.from);
+				for (PathBlock tc : toCall) {
+					if (vb.call.isRelative != tc.isRelative)
+						throw new BlockBuildingError("Incompatible path!!!", tc.from);
+					
+					int start = tc.pathname.startsWith(Constant.ANYPATH) ? Constant.ANYPATH.length()+1 : 0;
+					int end = (end = tc.pathname.lastIndexOf(Constant.COLON)) > start ? end : tc.pathname.length();
+					String classname = tc.pathname.substring(start, end);
+					vb.call.addBlockToCall(classname, tc);
+				}
+			});
 			
-			vb.call.setBlockToCall(toCall);
+			// TODO Add detection for possible infinite loop (warn user)
 		}));
 		
 		// TODO Validate that alias names in paths are unique in the path (also w.r.t class names)
@@ -154,8 +165,8 @@ public class BlockBuilder {
 	private static boolean isValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock, Set<String>> aliasForPathBlock) {
 		return Constant.ROOT.equals(vb.argName)
 		|| (pb.args.contains(vb.argName))
-		|| (pb.path != null && pb.path.path.containsClassName(vb.argName))
-		|| (pb.path != null && pb.path.path.containsAliasName(vb.argName)) //@
+		|| (pb.path != null && pb.path.containsClassName(vb.argName))
+		|| (pb.path != null && pb.path.containsAliasName(vb.argName)) //@
 		|| Utils.isString(vb.argName, Constant.QUOTES)
 		|| Utils.isNumber(vb.argName)
 		|| aliasForPathBlock.get(pb).contains(vb.argName);
@@ -190,67 +201,93 @@ public class BlockBuilder {
 	
 
 	*/
-	private static PathBlock getAbsolutePathBlockToCall(Map<String,PathBlock> pathBlocks, CallBlock call) {
-		PathBlock result = pathBlocks.get(call.name);
+	private static List<PathBlock> getAbsolutePathBlockToCall(Map<String,PathBlock> pathBlocks, CallBlock call) {
 		
-		// Maybe there is an alias in destination
-		// Get all destination starting by current call name
-		if (result == null) {
-			List<PathBlock> comp =  pathBlocks.values().stream().filter(pb2->pb2.path != null && !pb2.path.isRelative && pb2.path.name.startsWith(call.name)).collect(Collectors.toList());
-			if (comp.size() == 1)
-				result = comp.get(0);
-			else if (!comp.isEmpty())
-				throw new BlockBuildingError("multiple paths found for call " + call.name, call.from);
-		}
-		return result;
+		List<PathBlock> results = new ArrayList<>();
+		call.paths.forEach(path -> {
+		
+			String name = getPathName(path, call.isRelative);
+		
+			PathBlock result = pathBlocks.get(name);
+			
+			// Maybe there is an alias in destination
+			// Get all destination starting by current call name
+			if (result == null) {
+				List<PathBlock> comp =  pathBlocks.values().stream().filter(pb2->pb2.path != null && !pb2.isRelative && pb2.pathname.startsWith(name)).collect(Collectors.toList());
+				if (comp.size() == 1)
+					result = comp.get(0);
+				else if (comp.isEmpty())
+					throw new BlockBuildingError("No path found for call " + name, call.from);
+				else if (!comp.isEmpty())
+					throw new BlockBuildingError("multiple paths found for call " + name, call.from);
+			}
+			results.add(result);
+		});
+		return results;
 	}
-	private static PathBlock getRelativePathBlockToCall(Map<String,PathBlock> pathBlocks, CallBlock newCB) {;
-		// If relative then gather all compatible destinations
-		// start by the full call path
-		final String currentCallAlias = newCB.path.getAliasName();
-		List<PathBlock> result =  new ArrayList<PathBlock>();
-		List<PathBlock> resultWithAlias =  new ArrayList<PathBlock>();
-
-		String[] caller = newCB.path.classes;
-		for (PathBlock pb2 : pathBlocks.values()) {
-			if (pb2.path != null) { // Skip root path block since we dont know the class of the root
-				// destination must be relative
-				// Some path of the caller can be ignored but ALL the paths of destination MUST be present
-				// This implies the destination path MUST be smaller or equal
-				String[] dest = pb2.path.path.classes;
-				if (pb2.path.isRelative && dest.length <= caller.length
-						&& IntStream.range(0, dest.length).allMatch(i->dest[i].equals(caller[caller.length - dest.length + i]))) {
-					// dest = .../X/Y/Z, caller = .../W/X/Y/Z
-					result.add(pb2);
-					if (currentCallAlias != null && currentCallAlias.equals(pb2.path.path.getAliasName()))
-						resultWithAlias.add(pb2);
+	private static String getPathName(CallBlock cp) {
+		return getPathName(cp.paths.get(0), cp.isRelative);
+	}
+	private static String getPathName(ValuePath path, boolean isRelative) {
+		String result = "";
+		String finalAlias = path.getAliasName(); // Only final alias is part of the name
+		for (int i = 0; i < path.classes.length; i++)
+			result += "/" + path.classes[i];
+		return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
+	}
+	private static List<PathBlock> getRelativePathBlockToCall(Map<String,PathBlock> pathBlocks, CallBlock newCB) {
+		
+		List<PathBlock> results = new ArrayList<>();
+		
+		newCB.paths.forEach(path->{
+			// If relative then gather all compatible destinations
+			// start by the full call path
+			final String currentCallAlias = path.getAliasName();
+			List<PathBlock> result =  new ArrayList<PathBlock>();
+			List<PathBlock> resultWithAlias =  new ArrayList<PathBlock>();
+	
+			String[] caller = path.classes;
+			for (PathBlock pb2 : pathBlocks.values()) {
+				if (pb2.path != null) { // Skip root path block since we dont know the class of the root
+					// destination must be relative
+					// Some path of the caller can be ignored but ALL the paths of destination MUST be present
+					// This implies the destination path MUST be smaller or equal
+					String[] dest = pb2.path.classes;
+					if (pb2.isRelative && dest.length <= caller.length
+							&& IntStream.range(0, dest.length).allMatch(i->dest[i].equals(caller[caller.length - dest.length + i]))) {
+						// dest = .../X/Y/Z, caller = .../W/X/Y/Z
+						result.add(pb2);
+						if (currentCallAlias != null && currentCallAlias.equals(pb2.path.getAliasName()))
+							resultWithAlias.add(pb2);
+					}
 				}
 			}
-		}
-		// If aliasFound then only keep those
-		// Some path were having the given correct alias so they have priority since we have full control on the caller alias
-		if (!resultWithAlias.isEmpty())
-			result = resultWithAlias;
-
-		// Keep the single longest compatible destination path
-		PathBlock bad = null;
-		PathBlock good = null;
-		int length = 0;
-		for (PathBlock pb2 : result) {
-			if (pb2.path.path.classes.length > length) {
-				good = pb2;
-				bad = null;
-				length = good.path.path.classes.length;
-			} else if (pb2.path.path.classes.length == length)
-				bad = pb2; // There should be only one!
-		}
-		
-		if (good != null && bad == null)
-			return good;
-		else if (good != null && bad != null)
-			throw new BlockBuildingError("ambiguous path for call " + newCB.path.classes, newCB.from);
+			// If aliasFound then only keep those
+			// Some path were having the given correct alias so they have priority since we have full control on the caller alias
+			if (!resultWithAlias.isEmpty())
+				result = resultWithAlias;
 	
-		return null;
+			// Keep the single longest compatible destination path
+			PathBlock bad = null;
+			PathBlock good = null;
+			int length = 0;
+			for (PathBlock pb2 : result) {
+				if (pb2.path.classes.length > length) {
+					good = pb2;
+					bad = null;
+					length = good.path.classes.length;
+				} else if (pb2.path.classes.length == length)
+					bad = pb2; // There should be only one!
+			}
+			
+			if (good != null && bad == null)
+				results.add(good);
+			else if (good != null && bad != null)
+				throw new BlockBuildingError("ambiguous path for call " + getPathName(path, newCB.isRelative), newCB.from);
+			else if (good == null)
+				throw new BlockBuildingError("cannot find any path for " + getPathName(path, newCB.isRelative), newCB.from);
+		});
+		return results;
 	}
 	private static PathBlock parseSection(String fullText, Section section){
 		
@@ -260,9 +297,11 @@ public class BlockBuilder {
 			: section.aliasExp.aliasName;
 		
 		// Process path
-		CallBlock cp = parsePathExp(section.pathExp, Collections.emptyList());
+		CallBlock cp = parsePathExp(section.pathExp, null, Collections.emptyList());
 		if (section.line == null)
-			return new PathBlock(cp == null ? Constant.ROOT : cp.name, cp, Collections.emptyList(), sectionParms, section.from);
+			return cp == null
+				? new PathBlock(Constant.ROOT, null, false, Collections.emptyList(), sectionParms, section.from)
+				: new PathBlock(getPathName(cp), cp.paths.get(0), cp.isRelative, Collections.emptyList(), sectionParms, section.from);
 
 		// Extract lines
 		List<Line> lines = section.line.stream().collect(Collectors.toList());
@@ -278,7 +317,9 @@ public class BlockBuilder {
 				
 		// Process lines
 		List<Block> blocks = parseLines(fullText, lines);
-		PathBlock pb =  new PathBlock(cp == null ? Constant.ROOT : cp.name, cp, blocks, sectionParms, section.from);
+		PathBlock pb = cp == null
+				? new PathBlock(Constant.ROOT, null, false, blocks, sectionParms, section.from)
+				: new PathBlock(getPathName(cp), cp.paths.get(0), cp.isRelative, blocks, sectionParms, section.from);
 		
 		// Compute value blocks
 		ControlBlock cb = extractControlBlock(new ControlBlock(pb, pb.from), blocks.iterator());
@@ -292,26 +333,35 @@ public class BlockBuilder {
 			List<ValueBlock> result = new ArrayList<>();
 			if (call.argExp != null && call.argExp.valueExp != null) // && !call.argExp.valueExp.isEmpty())
 				call.argExp.valueExp.forEach(a->result.add(parseValueExp(a, null, null, a.from)));
-			return parsePathExp(call.pathExp, result);
+			return parsePathExp(call.pathExp, call.pathArg, result);
 		}
 		return null;
 	}
-	private static CallBlock parsePathExp(PathExp path, List<ValueBlock> args) {
+	private static CallBlock parsePathExp(PathExp path, List<PathArg> pathArgs, List<ValueBlock> args) {
 		// First Section Path is null for now
 		// Useless to create a Path here since we dont know the actual root Object type
 		if (path == null)
 			return null;
-
-		return new CallBlock(parsePathArg(path.pathArg), path.anyPathOp != null, args, path.from);
+		
+		return new CallBlock(parsePathArg(path.pathArg, pathArgs), path.anyPathOp != null, args, path.from);
 	}
-	private static ValuePath parsePathArg(List<PathArg> pathArgs) {
+	private static List<ValuePath> parsePathArg(List<PathArg> mainPathArgs, List<PathArg> extraPathArgs) {
+		List<ValuePath> result = new ArrayList<>();
 		ValuePath p = null;
-		for (PathArg pathArg : pathArgs) {
+		for (PathArg pathArg : mainPathArgs) {
 			p = p == null 
 					? (new ValuePath(pathArg.pathName, pathArg.aliasName, null)) 
 					: p.add(pathArg.pathName, pathArg.aliasName, null);
 		}
-		return p;
+		
+		final ValuePath pp = p;
+		if (extraPathArgs == null || extraPathArgs.isEmpty())
+			result.add(p);
+		else
+			extraPathArgs.forEach(x -> result.add(pp.parent == null
+					? new ValuePath(x.pathName, x.aliasName, null)
+					: pp.parent.add(x.pathName, x.aliasName, null)));
+		return result;
 	}
 	private static List<Block> parseLines(String fullText, List<Line> lines){
 		Stack<Block> result = new Stack<Block> ();
@@ -423,12 +473,12 @@ public class BlockBuilder {
 	private static ValueBlock parseValue(Value value) {
 		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseIfExp(value.ifExp), value.from);
 		if (result.call != null && !isValidForValue(result.call)) // TODO Why is that so?
-			throw new BlockBuildingError("alias only allowed at the end of a call in " + result.call.name, result.from);
+			throw new BlockBuildingError("alias only allowed at the end of a call in " + getPathName(result.call), result.from);
 		return result;
 	}
 	private static boolean isValidForValue(CallBlock cb) {
 		// Only the last alias is allowed in a value block call block
-		return cb.path.aliases.length > 0 && IntStream.range(0, cb.path.aliases.length - 1).allMatch(a->cb.path.aliases[a] == null);
+		return cb.paths.stream().allMatch(path -> path.aliases.length > 0 && IntStream.range(0, path.aliases.length - 1).allMatch(a->path.aliases[a] == null));
 	}
 	private static LogicalTestBlock parseIfExp(IfExp exp) {
 		return exp != null ? parseLogicalTestBlock(exp.logicalExp) : null;
