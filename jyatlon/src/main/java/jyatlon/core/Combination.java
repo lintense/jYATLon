@@ -147,7 +147,7 @@ public class Combination {
 		if (Utils.isString(vb.argName, Constant.QUOTES)) // value is a String
 			obj = Utils.unquote(vb.argName);
 		else if (Utils.isNumber(vb.argName)) // value is a Number
-			if (vb.argName.indexOf('.') > 0)
+			if (vb.argName.indexOf(Constant.DOT) > 0)
 				obj = Double.valueOf(vb.argName);
 			else
 				obj = Integer.valueOf(vb.argName);
@@ -236,11 +236,11 @@ public class Combination {
 	private static Method getMatchingMethod(Class<?> c, String methodName, Object[] parms) {
 		Method method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(methodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		if (method == null) {
-			String getMethodName = "get" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
+			String getMethodName = Constant.JAVA_ACCESSOR_PREFIX + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
 			method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		}
 		if (method == null) {
-			String getMethodName = "is" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
+			String getMethodName = Constant.JAVA_BOOLEAN_ACCESSOR_PREFIX + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
 			method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		}
 		return method;

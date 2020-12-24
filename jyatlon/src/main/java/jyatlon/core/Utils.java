@@ -39,7 +39,7 @@ public class Utils {
 	}
 	public static boolean isNumber(String s) {
 		return s != null && Character.isDigit(s.charAt(0))
-				? (s.indexOf('.') >= 0
+				? (s.indexOf(Constant.DOT) >= 0
 					? Double.toString(Double.parseDouble(s)).equals(s)
 					: Long.toString(Long.parseLong(s)).equals(s))
 				: false;

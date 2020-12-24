@@ -39,8 +39,9 @@ import jyatlon.core.Struct.ValueExp;
 
 
 /**
- * @author linte
- * SRP - A stateless "Struct to Block" data structure converter.
+ * @author lintense
+ * 
+ * SRP - A stateless (all static) "Struct to Block" data structure converter.
  * Struct is used as a facade when the Template Language is updated.
  * Block is the actual structure that is to be processed by the template.
  * 
@@ -97,10 +98,15 @@ public class BlockBuilder {
 //							throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 		}));
 		
+		// TODO - Can this be in a separate method
 		// Compute the destination of each value call blocks
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().filter(vb->vb.call != null).forEach(vb->{
 			
 			vb.call.paths.forEach(path->{
+				
+				// TODO - Validate that each path is compatible with parent path block
+				// i.e. === .../X/Y === {{call .../W/Z}} should be valid (I think!)
+				
 
 				// If the call is absolute we check only for an exact match
 				// First check if there exist an unambiguous matching absolute destination
@@ -232,8 +238,8 @@ public class BlockBuilder {
 		String result = "";
 		String finalAlias = path.getAliasName(); // Only final alias is part of the name
 		for (int i = 0; i < path.classes.length; i++)
-			result += "/" + path.classes[i];
-		return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
+			result += Constant.PATHSEP + path.classes[i];
+		return (isRelative ? Constant.ANYPATH + Constant.PATHSEP : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
 	}
 	private static List<PathBlock> getRelativePathBlockToCall(Map<String,PathBlock> pathBlocks, CallBlock newCB) {
 		

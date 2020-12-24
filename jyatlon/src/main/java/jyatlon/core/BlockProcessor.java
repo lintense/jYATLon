@@ -19,7 +19,7 @@ import jyatlon.core.Block.TextBlock;
 import jyatlon.core.Block.ValueBlock;
 
 /**
- * @author linte
+ * @author lintense
  * SRP: A state less processor that generate a text file.
  * All exceptions should be generated from this class not its delegates.
  * 
