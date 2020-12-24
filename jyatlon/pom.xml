@@ -7,6 +7,7 @@
    <name>jyatlon</name>
    <description>A declarative templating language</description>
    <properties>
+      <generate.sources>generate-sources</generate.sources>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <junit.jupiter.version>5.5.2</junit.jupiter.version>
       <junit.platform.version>1.5.2</junit.platform.version>
@@ -263,13 +264,13 @@
             <version>3.0.0</version>
             <executions>
                <execution>
-                  <phase>generate-sources</phase>
+                  <phase>${generate.sources}</phase>
                   <configuration>
                      <target>
                         <property name="compile_classpath" refid="maven.compile.classpath" />
                         <property name="project_src" value="${project.basedir}\src\main\java" />
                         <property name="project_bin" value="${project.build.directory}\classes" />
-                        <echo level="info" message="Calling: maven_gen_ocl_struct" />
+                        <echo level="info" message="Calling: maven_gen_struct" />
                         <ant antfile="${basedir}\build.xml">
                            <target name="maven_gen_struct" />
                            <reference torefid="maven.compile.classpath" refid="maven.compile.classpath" />
