@@ -111,6 +111,7 @@ Template@0;
                                 callExp: CallExp@20;
                                     argExp: null;
                                     from: (Integer)130;
+                                    pathArg: null;
                                     pathExp: PathExp@21;
                                         anyPathOp: (String)".../";
                                         from: (Integer)135;

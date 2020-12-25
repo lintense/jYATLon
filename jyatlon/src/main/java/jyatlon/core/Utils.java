@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
 
 public class Utils {
 
@@ -38,10 +39,16 @@ public class Utils {
 	}
 	public static boolean isNumber(String s) {
 		return s != null && Character.isDigit(s.charAt(0))
-				? (s.indexOf('.') >= 0
+				? (s.indexOf(Constant.DOT) >= 0
 					? Double.toString(Double.parseDouble(s)).equals(s)
 					: Long.toString(Long.parseLong(s)).equals(s))
 				: false;
+	}
+	public static String getClassName(Object o) {
+		Object result;
+		if (Map.class.isAssignableFrom(o.getClass()) && (result = ((Map<?,?>)o).get(Constant.MAP_KEY_FOR_CLASS)) != null)
+			return result.toString();
+		return o != null ? o.getClass().getName() : null;
 	}
 	
 //	public static InputStream urlToStream() throws FileNotFoundException {

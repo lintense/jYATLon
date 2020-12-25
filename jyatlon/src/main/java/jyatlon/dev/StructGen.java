@@ -4,6 +4,7 @@ package jyatlon.dev;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 
 import org.antlr.v4.runtime.Parser;
@@ -79,10 +80,18 @@ public class StructGen {
 		Class<?>[] parserClasses = parserType.getClasses();
 		Arrays.stream(parserClasses).filter(x -> hasGrammarMethod(x)).forEach(c -> {
 			
+			Method[] declaredMethods = c.getDeclaredMethods();
+			Arrays.sort(declaredMethods, new Comparator<Method>() {
+		        @Override
+		        public int compare(Method o1, Method o2) {
+		            return o1.getName().compareTo(o2.getName());
+		        }
+		    });
+			
 			w.append("	public static class " + getStructName(c) + " extends Struct {\n");
 			
 			// Fields
-			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+			Arrays.stream(declaredMethods).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
 				w.append("		final " + toFieldString(m) + ";\n");
 			});
 			
@@ -92,13 +101,13 @@ public class StructGen {
 			// StructBuilder will need to find the constructor but this would be easy since there is only one!
 			w.append("		public " + getStructName(c) + "(int from, int to, ");
 			CommaObj com = new CommaObj();
-			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+			Arrays.stream(declaredMethods).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
 				w.append(com.getComma() + toFieldString(m));
 			});
 			w.append("){\n");
 			w.append("			super(from, to);\n");
 			
-			Arrays.stream(c.getDeclaredMethods()).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
+			Arrays.stream(declaredMethods).filter(m1 -> isGrammarMethod(m1)).forEach(m -> {
 				w.append("			this." + lowerFirst(getStructName(m.getReturnType())) + " = " + lowerFirst(getStructName(m.getReturnType())) + ";\n");
 			});
 			w.append("		}\n");

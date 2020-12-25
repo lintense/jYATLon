@@ -20,9 +20,11 @@ import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
 
+/**
+ * @author lintense
+ *
+ */
 public class YATL {
-	
-	public static final String HIDDEN_HEADER = "=$=\n";
 	
 	private final String content;
 //	private final Template template;
@@ -96,12 +98,12 @@ public class YATL {
      * @return
      */
     private static String getActualContent(String templateContent) {
-    	return templateContent.startsWith(HIDDEN_HEADER) 
+    	return templateContent.startsWith(Constant.HIDDEN_HEADER) 
     			? templateContent 
-    			: HIDDEN_HEADER + templateContent + "\n"; // Always at least 2 lines
+    			: Constant.HIDDEN_HEADER + templateContent + Constant.LINE_SEP; // Always at least 2 lines
     }
     private Point getErrorPosition(int pos) {
-    	String[] lines = content.split("\n");
+    	String[] lines = content.split(Constant.LINE_SEP);
     	int eol = content.indexOf(lines[1])-lines[0].length(); // Always at least 2 lines
     	int x = 0, y = 0;
     	LOOP: for (String s : lines)

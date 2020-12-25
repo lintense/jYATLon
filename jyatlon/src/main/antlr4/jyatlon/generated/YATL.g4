@@ -74,7 +74,7 @@ ifExp
 	;
 
 callExp
-	: CALL SPACE+ pathExp SPACE* argExp?
+	: CALL SPACE+ pathExp (SPACE* PIPE SPACE* pathArg)* SPACE* argExp?
 	;
 
 logicalExp

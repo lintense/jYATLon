@@ -3,11 +3,10 @@ package jyatlon.core;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * @author linte
+ * @author lintense
  * SRP: Encapsulates all the path mechanisms
  */
 public class ValuePath {

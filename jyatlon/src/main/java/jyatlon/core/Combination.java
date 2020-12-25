@@ -66,12 +66,16 @@ public class Combination {
 					result = false;
 			}
 		}
-		for (int i = 0; i < vp.classes.length; i++)
-			if ((Map.class.isAssignableFrom(vp.objects[i].getClass()) && ((Map)vp.objects[i]).containsKey(Constant.MAP_KEY_FOR_CLASS) 
-					? ((Map)vp.objects[i]).get(Constant.MAP_KEY_FOR_CLASS).toString() 
-					: vp.objects[i].getClass().getName())
-						.endsWith(vp.classes[i])) // Must be the actual class name (for now)
+		for (int i = 0; i < vp.classes.length; i++) {
+			String name = Utils.getClassName(vp.objects[i]);
+			if (name != null && name.endsWith(vp.classes[i])) // Must be the actual class name (for now)
 				combinedClasses.put(vp.classes[i], vp.objects[i]); // Keep only the most recent object
+//			if ((Map.class.isAssignableFrom(vp.objects[i].getClass()) && ((Map)vp.objects[i]).containsKey(Constant.MAP_KEY_FOR_CLASS) 
+//					? ((Map)vp.objects[i]).get(Constant.MAP_KEY_FOR_CLASS).toString() 
+//					: vp.objects[i].getClass().getName())
+//						.endsWith(vp.classes[i])) // Must be the actual class name (for now)
+//				combinedClasses.put(vp.classes[i], vp.objects[i]); // Keep only the most recent object
+		}
 		if (vp.isRoot())
 			combinedClasses.put(vp.classes[0], vp.objects[0]);
 
@@ -143,7 +147,10 @@ public class Combination {
 		if (Utils.isString(vb.argName, Constant.QUOTES)) // value is a String
 			obj = Utils.unquote(vb.argName);
 		else if (Utils.isNumber(vb.argName)) // value is a Number
-			obj = Double.parseDouble(vb.argName);
+			if (vb.argName.indexOf(Constant.DOT) > 0)
+				obj = Double.valueOf(vb.argName);
+			else
+				obj = Integer.valueOf(vb.argName);
 		else
 			obj = getObjectForName(vb.argName); // Should be already defined
 
@@ -215,8 +222,8 @@ public class Combination {
 	private static Object extractObject(Object o, Class<?> c, String methodName, Object[] parms) {
 		Object x = null;
 		try {
-			if (parms.length == 0 && Map.class.isAssignableFrom(c) && ((Map)o).containsKey(methodName))
-				return ((Map)o).get(methodName);
+			if (parms.length == 0 && Map.class.isAssignableFrom(c) && ((Map<?,?>)o).containsKey(methodName))
+				return ((Map<?,?>)o).get(methodName);
 			
 			Method m = getMatchingMethod(c, methodName, parms);
 			x = m != null ? m.invoke(o, parms) : c.getField(methodName).get(o);
@@ -229,11 +236,11 @@ public class Combination {
 	private static Method getMatchingMethod(Class<?> c, String methodName, Object[] parms) {
 		Method method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(methodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		if (method == null) {
-			String getMethodName = "get" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
+			String getMethodName = Constant.JAVA_ACCESSOR_PREFIX + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
 			method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		}
 		if (method == null) {
-			String getMethodName = "is" + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
+			String getMethodName = Constant.JAVA_BOOLEAN_ACCESSOR_PREFIX + Character.toUpperCase(methodName.charAt(0)) + methodName.substring(1);
 			method = Arrays.stream(c.getMethods()).filter(m -> m.getName().equals(getMethodName) && m.getParameterCount() == parms.length).findFirst().orElse(null);
 		}
 		return method;
@@ -319,8 +326,8 @@ public class Combination {
 		// Number comparison
 //		double d1 = computeDoubleValue(vb1);
 //		double d2 = computeDoubleValue(vb2);
-		double d1 = ((Double)o1).doubleValue();
-		double d2 = ((Double)o2).doubleValue();
+		double d1 = o1 instanceof Double ? ((Double)o1).doubleValue() : ((Integer)o1).doubleValue();
+		double d2 = o2 instanceof Double ? ((Double)o2).doubleValue() : ((Integer)o2).doubleValue();
 		if (">".equals(test.op))
 			return d1 > d2;
 		else if (">=".equals(test.op))
@@ -343,8 +350,13 @@ public class Combination {
 			return o;
 		if (Constant.NOT.equals(vb.unaryOp))
 			return o == null || !Boolean.valueOf(o.toString());
-		if (Constant.MINUS.equals(vb.unaryOp))
-			return o==null ? 0d : -Double.parseDouble(o.toString());
+		if (Constant.MINUS.equals(vb.unaryOp) && o == null)
+			return 0d;
+		int i = Integer.parseInt(o.toString());
+		double d = Double.parseDouble(o.toString());
+		o = (double)i == d 
+			? Integer.valueOf(Constant.MINUS.equals(vb.unaryOp) ? -i : i) 
+			: Double.valueOf(Constant.MINUS.equals(vb.unaryOp) ? -d : d);
 		throw new IllegalStateException("Invalid operator"); // Should never happen unless grammar is updated!
 	}
 	private Object basicGetObject(ValueBlock vb, Map<String,Integer> indexMap, Map<String,Integer> sizeMap) {

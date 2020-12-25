@@ -2,9 +2,12 @@ package jyatlon.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -128,15 +131,18 @@ public abstract class Block {
 	}
 	public static class PathBlock extends Block {
 		final String pathname;
-		final CallBlock path;
+//		final CallBlock path;
+		final ValuePath path;
+		final boolean isRelative;
 		List<Block> blocks;
 		final List<String> args;
 		private ControlBlock controlBlock;
 		
-		public PathBlock(String pathname, CallBlock path, List<Block> blocks, List<String> args, int from) {
+		public PathBlock(String pathname, ValuePath path, boolean isRelative, List<Block> blocks, List<String> args, int from) {
 			super(from);
 			this.pathname = pathname;
 			this.path = path;
+			this.isRelative = isRelative;
 			this.args = args;
 			this.blocks = blocks;
 		}
@@ -240,31 +246,45 @@ public abstract class Block {
 	}
 	public static class CallBlock extends Block {
 
-		final ValuePath path;
-		final String name;
+		final List<ValuePath> paths;
+//		final String name;
 		final boolean isRelative;
 		final List<ValueBlock> args; // empty when into a PathBlock.path
-		private PathBlock toCall;
+		private Map<String,PathBlock> toCall = new HashMap<>();
 		
-		public CallBlock(ValuePath path, boolean isRelative, List<ValueBlock> args, int from) {
+		public CallBlock(List<ValuePath> paths, boolean isRelative, List<ValueBlock> args, int from) {
 			super(from);
-			this.path = path;
+			this.paths = paths;
 			this.args = args;
 			this.isRelative = isRelative;
-			this.name = computeName(); // FIXME Is it used?
+//			this.name = computeName(); // FIXME Is it used?
 		}
-		private String computeName() {
-			String result = "";
-			String finalAlias = path.getAliasName(); // Only final alias is part of the name
-			for (int i = 0; i < path.classes.length; i++)
-				result += "/" + path.classes[i];
-			return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
+//		private String computeName() { // TODO - If used by section then put is in section...
+//			String result = "";
+//			String finalAlias = path.getAliasName(); // Only final alias is part of the name
+//			for (int i = 0; i < path.classes.length; i++)
+//				result += "/" + path.classes[i];
+//			return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
+//		}
+		public void addBlockToCall(String classname, PathBlock call) {
+			toCall.put(classname, call);
 		}
-		public void setBlockToCall(PathBlock toCall) {
-			this.toCall = toCall;
+		public PathBlock getBlockToCall(ValuePath vp) {
+			PathBlock pb = toCall.get(vp.getClassName());
+			if (pb != null)
+				return pb;
+			String classname = Utils.getClassName(vp.getObject());
+			for (Iterator<Entry<String, PathBlock>> i = toCall.entrySet().iterator(); i.hasNext();) {
+				Map.Entry<String,Block.PathBlock> e = i.next();
+				if (vp.getClassName().endsWith(e.getKey()) || classname.endsWith(e.getKey()))
+					return e.getValue();
+			}
+			return null;
 		}
-		public PathBlock getBlockToCall() {
-			return toCall;
+		public String[] getPossibleCalls() {
+			String[] result = new String[toCall.size()];
+			toCall.keySet().toArray(result);
+			return result;
 		}
 		public List<ValueBlock> getValues() {
 			return args.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());
