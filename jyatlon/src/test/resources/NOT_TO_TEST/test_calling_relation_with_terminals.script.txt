@@ -1,0 +1,20 @@
+>>>TEST: Calling any path
+>>>DESC: Calling any path
+>>>ROOT: {"ctx" : {"CLASS" : "Relation", "method":"+", "parms":[
+{"CLASS" : "Terminal", "type" : "String", "toString" : "2"},
+{"CLASS" : "Terminal", "type" : "String", "toString" : "2"}
+]}}
+>>>TEMPLATE:
+
+{{call .../Relation $.ctx}}
+=== .../Relation ===
+({begin PARM}%%%
+{{call .../Terminal|Relation Relation.parms:PARM}}%%%
+{{if indexOf(PARM)==1 Relation.method}}%%%
+{end PARM})
+=== .../Terminal ===
+{{if Terminal.type=='String' '"'}}{{Terminal.toString}}{{if Terminal.type=='String' '"'}}%%%
+
+>>>EXPECTED:
+
+"My value!"

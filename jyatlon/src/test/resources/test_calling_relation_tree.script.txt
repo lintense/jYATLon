@@ -1,0 +1,28 @@
+>>>TEST: calling relation tree
+>>>DESC: Calling any path
+>>>ROOT: {"ctx" : {"CLASS" : "Relation", "method":"*", "parms":[
+	{"CLASS" : "Relation", "method":"+", "parms":[
+		{"CLASS" : "Terminal", "type" : "String", "toString" : "1"},
+		{"CLASS" : "Terminal", "type" : "String", "toString" : "2"}
+	]}
+	,
+	{"CLASS" : "Relation", "method":"-", "parms":[
+		{"CLASS" : "Terminal", "type" : "String", "toString" : "3"},
+		{"CLASS" : "Terminal", "type" : "String", "toString" : "4"}
+	]}
+]}}
+
+>>>TEMPLATE:
+
+{{call .../Relation $.ctx}}
+=== .../Relation ===
+({begin PARM}%%%
+{{call .../Terminal|Relation Relation.parms:PARM}}%%%
+{{if indexOf(PARM)==1 Relation.method}}%%%
+{end PARM})%%%
+=== .../Terminal ===
+{{if Terminal.type=='String' '"'}}{{Terminal.toString}}{{if Terminal.type=='String' '"'}}%%%
+
+>>>EXPECTED:
+
+(("1"+"2")*("3"-"4"))

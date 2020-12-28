@@ -121,7 +121,7 @@ public class BlockBuilder {
 					List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
 					
 					// Add parent block path to call block if call is relative
-					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), pb.isRelative, args, vb.from) : vb.call;
+					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), vb.call.isRelative, args, vb.from) : vb.call;
 					
 					// If new call block is absolute (as by parent) then check again for an exact match
 					toCall = newCB.isRelative
@@ -354,19 +354,18 @@ public class BlockBuilder {
 	private static List<ValuePath> parsePathArg(List<PathArg> mainPathArgs, List<PathArg> extraPathArgs) {
 		List<ValuePath> result = new ArrayList<>();
 		ValuePath p = null;
-		for (PathArg pathArg : mainPathArgs) {
+		for (PathArg pathArg : mainPathArgs)
 			p = p == null 
-					? (new ValuePath(pathArg.pathName, pathArg.aliasName, null)) 
-					: p.add(pathArg.pathName, pathArg.aliasName, null);
-		}
-		
+				? (new ValuePath(pathArg.pathName, pathArg.aliasName, null)) 
+				: p.add(pathArg.pathName, pathArg.aliasName, null);
+		// Insert primary path
+		result.add(p);
+		// Add extra paths to primary parent
 		final ValuePath pp = p;
-		if (extraPathArgs == null || extraPathArgs.isEmpty())
-			result.add(p);
-		else
+		if (extraPathArgs != null)
 			extraPathArgs.forEach(x -> result.add(pp.parent == null
-					? new ValuePath(x.pathName, x.aliasName, null)
-					: pp.parent.add(x.pathName, x.aliasName, null)));
+				? new ValuePath(x.pathName, x.aliasName, null)
+				: pp.parent.add(x.pathName, x.aliasName, null)));
 		return result;
 	}
 	private static List<Block> parseLines(String fullText, List<Line> lines){

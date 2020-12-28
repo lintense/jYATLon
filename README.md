@@ -13,7 +13,7 @@ Most current template languages are procedural, so they look like code, not like
 What about a new *declarative* templating language build from the ground up to look just like a *real* template?
 Doing so would provide the following benefits:
 
-- **Clarity:** No more `${#if#elseif#endif}` gibberish.
+- **Clarity:** No more undecipherable `#forEach#if#elseif#endif#end`.
 - **Java 8 compatibility:** To accomodate existing projects.
 - **Light & simple:** Easy to understand, easy to adapt!
 - **Performance**... Whenever possible!

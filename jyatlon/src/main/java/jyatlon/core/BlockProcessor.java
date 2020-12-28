@@ -176,7 +176,8 @@ public class BlockProcessor {
 				if (cb.before != null)
 					writeBlock(cb.before, combination, w, indexMap, sizeMap);
 				
-				indexMap.put(cb.aliasName, ++index);
+				if (cb.aliasName != null)
+					indexMap.put(cb.aliasName, ++index);
 				writeBlock(cb.begin, oc, w, indexMap, sizeMap);
 				indexMap.remove(cb.aliasName);
 				

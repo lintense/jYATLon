@@ -25,18 +25,15 @@ import jyatlon.test.utilities.TestUtils;
 
 @RunWith(JUnitPlatform.class)
 class YATLTest {
-	
 	private static final String TEST_SCRIPT_EXTENSION = "*.script.txt";
-	private static final String DEBUG_SCRIPT_EXTENSION = "*.script.txt.tmp.txt";
+	
 	private static final String TEST_SCRIPT_ROOT = "ROOT";
 	private static final String TEST_SCRIPT_TEMPLATE = "TEMPLATE";
 	private static final String TEST_SCRIPT_EXPECTED = "EXPECTED";
-	private static final String RESOURCE_FOLDER = "src/test/resources";
+	
+	private static final String AUTOMATED_TESTING_FOLDER = "src/test/resources";
+	private static final String MANUAL_TESTING_FOLDER = "src/test/resources/DEBUG";
 
-//	@Test
-//	void test() {
-//		fail("Not yet implemented");
-//	}
 	@Test
 	void testBeginEndControls() throws IOException {
 		String test = "{begin ALIAS}Hello {{$:ALIAS}}!{end ALIAS}";
@@ -76,23 +73,21 @@ class YATLTest {
 	}
 	@Test
 	public void testAllScripts() throws IOException {
-
-		;
-		System.out.println("List of the text files in the specified directory: " + RESOURCE_FOLDER);
-		File[] files = TestUtils.getAllFiles(RESOURCE_FOLDER, TEST_SCRIPT_EXTENSION);
+		System.out.println("List of the text files in the specified directory: " + AUTOMATED_TESTING_FOLDER);
+		File[] files = TestUtils.getAllFiles(AUTOMATED_TESTING_FOLDER, TEST_SCRIPT_EXTENSION);
 		for(File file : files)
 			testScriptFile(file);
 	}
 	public static void main(String[] args) throws IOException {
 
-		System.out.println("List of the text files in the specified directory: " + RESOURCE_FOLDER);
-		File[] files = TestUtils.getAllFiles(RESOURCE_FOLDER, DEBUG_SCRIPT_EXTENSION);
+		System.out.println("List of the text files in the specified directory: " + MANUAL_TESTING_FOLDER);
+		File[] files = TestUtils.getAllFiles(MANUAL_TESTING_FOLDER, TEST_SCRIPT_EXTENSION);
 		for(File file : files)
 			testScriptFile(file);
 	}
 	
 	private static void testScriptFile(File file) throws IOException {
-		System.out.println((">>> Testing file : " + file.getAbsolutePath()).toUpperCase());
+		System.out.println((">>> Testing script file : " + file.getAbsolutePath()).toUpperCase());
 		List<String> testScriptLines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
 		Map<String,String> testMap = extractTestMap(testScriptLines);
 		Object testRoot = TestUtils.jsonToObj(testMap.get(TEST_SCRIPT_ROOT));	
@@ -126,7 +121,7 @@ class YATLTest {
 		return result;
 	}
 	private static String showTestHeader(String testName) {
-		System.out.println("### " + testName + " ###");
+		System.out.println(">>> Testing script file : " + (new File(AUTOMATED_TESTING_FOLDER, testName + ".txt")).getAbsolutePath().toUpperCase());
 		return testName;
 	}
 	private static String getStructAsString(String filename, Struct t) throws IOException {
@@ -134,7 +129,7 @@ class YATLTest {
 		PrintStream ps = new PrintStream(baos);
 		ObjectTree.dumpObject(t, ps);
 		String obtained = baos.toString();
-		TestUtils.saveToFile(filename + ".last.txt", obtained);
+		TestUtils.saveToFile(AUTOMATED_TESTING_FOLDER, filename + ".last.txt", obtained);
 		return obtained;
 	}
 	private static String process(String templateContent, Object root) throws IOException {
@@ -143,10 +138,7 @@ class YATLTest {
 		return w.toString();
 	}
 
-	
-	
-	
-	
+
 /* Stuff to be tested - someday
  * 
  * 

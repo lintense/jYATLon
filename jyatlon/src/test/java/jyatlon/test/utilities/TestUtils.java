@@ -22,8 +22,8 @@ public class TestUtils {
 		byte[] encoded = Files.readAllBytes(getResource(filename).toPath());
 		return new String(encoded, encoding);
 	}
-	public static void saveToFile(String filename, String text) throws IOException {
-		File file = new File("src/test/resources", filename);
+	public static void saveToFile(String testFileFolder, String filename, String text) throws IOException {
+		File file = new File(testFileFolder, filename);
 		try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
 		    out.print(text);
 		}
