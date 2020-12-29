@@ -22,7 +22,7 @@ public interface Constant {
 	static final String AMP = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.AMP));
 	static final String COLON = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.COLON));
 	static final String DOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.DOT));
-//	static final String LINE_SEP = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NEWLINE));
+	static final String LINE_SEP = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NEWLINE));
 	static final String LOWER = "<";
 	static final String GREATER = ">";
 	

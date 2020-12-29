@@ -26,7 +26,7 @@ import jyatlon.generated.YATLParser;
  */
 public class YATL {
 	
-	private static final String LINE_SEP = System.lineSeparator();
+//	private static final String LINE_SEP = System.lineSeparator();
 	private final String content;
 //	private final Template template;
 	private final Block.PathBlock mainBlock;
@@ -55,9 +55,9 @@ public class YATL {
 			throw new IllegalArgumentException("line " + p.y + ":" + p.x + " " + e.getMessage(), e);
 		}
 	}
-	private String extractLineSep(String content) {
-		return System.lineSeparator();
-	}
+//	private String extractLineSep(String content) {
+//		return System.lineSeparator();
+//	}
 	public void merge(Object root, Writer w) {
 		BlockProcessor.merge(mainBlock, w, root);
 	}
@@ -104,14 +104,15 @@ public class YATL {
     private static String getActualContent(String templateContent) {
     	return templateContent.startsWith(Constant.HIDDEN_HEADER) 
     			? templateContent 
-    			: Constant.HIDDEN_HEADER + LINE_SEP + templateContent + LINE_SEP; // Always at least 2 lines
+    			: Constant.HIDDEN_HEADER + Constant.LINE_SEP + templateContent + Constant.LINE_SEP; // Always at least 2 lines
     }
     private Point getErrorPosition(int pos) {
-    	String[] lines = content.split(LINE_SEP);
+    	String[] lines = content.split(Constant.LINE_SEP);
     	int x = 0, y = 0;
     	while (x <= pos)
-			x+=lines[y++].length()+LINE_SEP.length();
-    	return new Point(lines[--y].length()-x+pos+Constant.HIDDEN_HEADER.length(), y);
+			x+=lines[y++].length()+Constant.LINE_SEP.length();
+//    	int adj = lines[--y].charAt(0) == '\r' ? -1 : 0;
+    	return new Point(lines[y-1].length()-x+pos+Constant.HIDDEN_HEADER.length()-1, y-1);
     }
 }
 /*
