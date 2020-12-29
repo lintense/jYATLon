@@ -102,7 +102,7 @@ public class BlockBuilder {
 		// Compute the destination of each value call blocks
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().filter(vb->vb.call != null).forEach(vb->{
 			
-			vb.call.paths.forEach(path->{
+			
 				
 				// TODO - Validate that each path is compatible with parent path block
 				// i.e. === .../X/Y === {{call .../W/Z}} should be valid (I think!)
@@ -110,38 +110,47 @@ public class BlockBuilder {
 
 				// If the call is absolute we check only for an exact match
 				// First check if there exist an unambiguous matching absolute destination
-				List<PathBlock> toCall;
-				if (!vb.call.isRelative) {
-					toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
-//					if (toCall == null)
-//						throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
-				} else {
+//				List<PathBlock> toCall;
+//				if (!vb.call.isRelative) {
+//					toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
+////					if (toCall == null)
+////						throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
+//				} else {
+//					List<ValuePath> vps = new ArrayList<>();
+//					vb.call.paths.forEach(path->{ // FIXME useless iteration!!!
+//						vps.add(pb.path.add(path));
+//					});
 					
-					
-					List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
+//						List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
 					
 					// Add parent block path to call block if call is relative
-					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), vb.call.isRelative, args, vb.from) : vb.call;
+//					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), vb.call.isRelative, null, vb.from) : vb.call;
+			CallBlock newCB = vb.call.isRelative && pb.path != null 
+					? new CallBlock(vb.call.paths.stream().map(p->pb.path.add(p)).collect(Collectors.toList()), vb.call.isRelative, null, vb.from) 
+					: vb.call;
+//					if (!newCB.isRelative)
+						
+
+			// If new call block is absolute (as by parent) then check again for an exact match
+			List<PathBlock> toCall = vb.call.isRelative
+				? getRelativePathBlockToCall(pathBlocks, newCB)
+				: getAbsolutePathBlockToCall(pathBlocks, newCB);
 					
-					// If new call block is absolute (as by parent) then check again for an exact match
-					toCall = newCB.isRelative
-							? getRelativePathBlockToCall(pathBlocks, newCB)
-							: getAbsolutePathBlockToCall(pathBlocks, newCB);
-	
-				}
+//				}
 //				if (toCall == null)
 //					throw new BlockBuildingError("cannot find any path for " + vb.call.name, vb.from);
-				for (PathBlock tc : toCall) {
-					if (vb.call.isRelative != tc.isRelative)
-						throw new BlockBuildingError("Incompatible path!!!", tc.from);
-					
-					int start = tc.pathname.startsWith(Constant.ANYPATH) ? Constant.ANYPATH.length()+1 : 0;
-					int end = (end = tc.pathname.lastIndexOf(Constant.COLON)) > start ? end : tc.pathname.length();
-					String classname = tc.pathname.substring(start, end);
-					vb.call.addBlockToCall(classname, tc);
-				}
-			});
+
 			
+			for (PathBlock tc : toCall) {
+				if (vb.call.isRelative != tc.isRelative)
+					throw new BlockBuildingError("Incompatible path!!!", tc.from);
+				
+				int start = tc.pathname.startsWith(Constant.ANYPATH) ? Constant.ANYPATH.length()+1 : 0;
+				int end = (end = tc.pathname.lastIndexOf(Constant.COLON)) > start ? end : tc.pathname.length();
+				String classname = tc.pathname.substring(start, end);
+				
+				vb.call.addBlockToCall(classname, tc); // FIXME
+			}
 			// TODO Add detection for possible infinite loop (warn user)
 		}));
 		
@@ -349,11 +358,11 @@ public class BlockBuilder {
 		if (path == null)
 			return null;
 		
-		return new CallBlock(parsePathArg(path.pathArg, pathArgs), path.anyPathOp != null, args, path.from);
+		return new CallBlock(parsePathArg(path.pathArg, pathArgs, path.anyPathOp != null), path.anyPathOp != null, args, path.from);
 	}
-	private static List<ValuePath> parsePathArg(List<PathArg> mainPathArgs, List<PathArg> extraPathArgs) {
+	private static List<ValuePath> parsePathArg(List<PathArg> mainPathArgs, List<PathArg> extraPathArgs, boolean isRelative) {
 		List<ValuePath> result = new ArrayList<>();
-		ValuePath p = null;
+		ValuePath p = isRelative ? null : ValuePath.getRoot(null);
 		for (PathArg pathArg : mainPathArgs)
 			p = p == null 
 				? (new ValuePath(pathArg.pathName, pathArg.aliasName, null)) 

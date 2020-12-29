@@ -251,6 +251,7 @@ public abstract class Block {
 		final boolean isRelative;
 		final List<ValueBlock> args; // empty when into a PathBlock.path
 		private Map<String,PathBlock> toCall = new HashMap<>();
+		private Map<ValuePath,PathBlock> toCallTest = new HashMap<>(); // FIXME
 		
 		public CallBlock(List<ValuePath> paths, boolean isRelative, List<ValueBlock> args, int from) {
 			super(from);
@@ -267,18 +268,35 @@ public abstract class Block {
 //			return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
 //		}
 		public void addBlockToCall(String classname, PathBlock call) {
-			toCall.put(classname, call);
+			toCall.put(classname, call); // analyse this!
+			toCallTest.put(call.path, call);
 		}
-		public PathBlock getBlockToCall(ValuePath vp) {
-			PathBlock pb = toCall.get(vp.getClassName());
-			if (pb != null)
-				return pb;
-			String classname = Utils.getClassName(vp.getObject());
-			for (Iterator<Entry<String, PathBlock>> i = toCall.entrySet().iterator(); i.hasNext();) {
-				Map.Entry<String,Block.PathBlock> e = i.next();
-				if (vp.getClassName().endsWith(e.getKey()) || classname.endsWith(e.getKey()))
+		public PathBlock getBlockToCall(Combination combination, ValuePath vp) { // TODO !isRelative
+//			PathBlock pb = toCall.get(vp.getClassName());
+//			if (pb != null)
+//				return pb;
+//			String classname = Utils.getClassName(vp.getObject());
+			
+			// TODO validate there are no conflicting ClassName in value block call paths...
+			
+			assert isRelative || toCallTest.keySet().iterator().next().length() == combination.pathCtx.length() + 1;
+			
+			// For now, just check the last object class
+			String className = Utils.getClassName(vp.getObject());
+			for (Iterator<Entry<ValuePath, PathBlock>> i = toCallTest.entrySet().iterator(); i.hasNext();) {
+				Map.Entry<ValuePath,Block.PathBlock> e = i.next();
+				if (className.endsWith(e.getKey().getClassName()))
 					return e.getValue();
 			}
+//			LOOP: for (Iterator<Entry<ValuePath, PathBlock>> i = toCallTest.entrySet().iterator(); i.hasNext();) {
+//				Map.Entry<ValuePath,Block.PathBlock> e = i.next();
+//				
+//				int total = isRelative ? vp.length() : e.getKey().length();
+//				for(int j = 1; j <= total; j++)
+//					if (!Utils.getClassName(vp.objects[vp.length()-j]).endsWith(e.getKey().classes[e.getKey().length()-j]))
+//						continue LOOP;
+//				return e.getValue();
+//			}
 			return null;
 		}
 		public String[] getPossibleCalls() {

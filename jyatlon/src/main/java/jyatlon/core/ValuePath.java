@@ -88,6 +88,8 @@ public class ValuePath {
 		for (int i = 0; i < classes.length; i++)
 			sb.append(".").append(classes[i]).append(aliases[i] != null && !aliases[i].isEmpty() ? ":" + aliases[i] : "");
 		return "{" + sb.toString().substring(1) + "}";
-			
+	}
+	public int length() {
+		return classes.length;
 	}
 }

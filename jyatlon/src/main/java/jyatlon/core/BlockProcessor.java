@@ -218,7 +218,7 @@ public class BlockProcessor {
 					if (vb.call == null)
 						w.append(o.toString());
 					else { // TODO called path must match actual object class or interface?
-						PathBlock pb = vb.call.getBlockToCall(foundPath);
+						PathBlock pb = vb.call.getBlockToCall(combination, foundPath);
 						if (pb == null)
 							throw new IllegalStateException("No path found to match object: " + Utils.getClassName(o) + ". Possible suffixes are: " + Arrays.toString(vb.call.getPossibleCalls()));
 						writeBlock(pb, w, combination, new ValuePath(pb.path.getClassName(), pb.path.getAliasName(), o));

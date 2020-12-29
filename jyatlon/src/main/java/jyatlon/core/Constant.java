@@ -22,7 +22,7 @@ public interface Constant {
 	static final String AMP = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.AMP));
 	static final String COLON = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.COLON));
 	static final String DOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.DOT));
-	static final String LINE_SEP = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NEWLINE));
+//	static final String LINE_SEP = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NEWLINE));
 	static final String LOWER = "<";
 	static final String GREATER = ">";
 	
@@ -45,5 +45,5 @@ public interface Constant {
 	static final String JAVA_ACCESSOR_PREFIX = "get";
 	static final String JAVA_BOOLEAN_ACCESSOR_PREFIX = "is";
 	
-	static final String HIDDEN_HEADER = Constant.EQUAL + Constant.ROOT + Constant.EQUAL + Constant.LINE_SEP;
+	static final String HIDDEN_HEADER = Constant.EQUAL + Constant.ROOT + Constant.EQUAL;
 }
