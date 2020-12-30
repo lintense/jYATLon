@@ -1,0 +1,9 @@
+>>>TEST: test_empty_template_do_nothing
+>>>DESC: 
+>>>ROOT: "test"
+
+>>>TEMPLATE:
+
+>>>EXPECTED:
+
+

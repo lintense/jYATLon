@@ -39,105 +39,108 @@ public class BlockBuilder {
 	 */
 	public static Map<String,PathBlock> parseTemplate(String fullText, Template t) {
 		
-		System.out.println("Starting parse process...");
+		System.out.print("Starting parse process...");
 		long t1 = System.currentTimeMillis();
 		
-		if (t.section == null)
-			return null;
-		
-		Map<String,PathBlock> pathBlocks = new HashMap<String,PathBlock>();
-		t.section.forEach(section -> {
-			PathBlock b = parseSection(fullText, section);
-			if (pathBlocks.put(b.pathname, b) != null)
-				throw new BuildingError("duplicated path name " + b.pathname, b.from);
-		});
-		
-		// Gather all alias path blocks aliases
-		Map<PathBlock,Set<String>> aliasForPathBlock = new HashMap<>();
-		pathBlocks.values().stream().forEach(pb->pb.getValues().forEach(vb -> {
-			Set<String> x = aliasForPathBlock.getOrDefault(pb, new HashSet<>());
-			aliasForPathBlock.put(pb, x);
-			x.addAll(vb.getAliases());
-		}));
-		
-		// Validate the pivot of each value expression
-		// A value expression always starts with any of: the root context, a path or an alias.
-		// Reason: To help the user, no implicit value.
-		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
-			if (!isValidValueBlock(vb, pb, aliasForPathBlock))
-				throw new BuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
-
-			// Validate sub values inside test block
-			if (vb.test != null)
-				validateTestBlock(vb.test, pb, aliasForPathBlock);
-//				for (BinaryTestBlock bt : vb.test.exp)
-//					for (ValueBlock subvb : bt.values)
-//						if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
-//							throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
-		}));
-		
-		// TODO - Can this be in a separate method
-		// Compute the destination of each value call blocks
-		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().filter(vb->vb.call != null).forEach(vb->{
+		try {
+	//		if (t.section == null)
+	//			return null;
 			
+			Map<String,PathBlock> pathBlocks = new HashMap<String,PathBlock>();
+			t.section.forEach(section -> {
+				PathBlock b = parseSection(fullText, section);
+				if (pathBlocks.put(b.pathname, b) != null)
+					throw new BuildingError("Duplicated path block name: " + b.pathname, b.from);
+			});
 			
+			// Gather all alias path blocks aliases
+			Map<PathBlock,Set<String>> aliasForPathBlock = new HashMap<>();
+			pathBlocks.values().stream().forEach(pb->pb.getValues().forEach(vb -> {
+				Set<String> x = aliasForPathBlock.getOrDefault(pb, new HashSet<>());
+				aliasForPathBlock.put(pb, x);
+				x.addAll(vb.getAliases());
+			}));
+			
+			// Validate the pivot of each value expression
+			// A value expression always starts with any of: the root context, a path or an alias.
+			// Reason: To help the user, no implicit value.
+			pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
+				if (!isValidValueBlock(vb, pb, aliasForPathBlock))
+					throw new BuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
+	
+				// Validate sub values inside test block
+				if (vb.test != null)
+					validateTestBlock(vb.test, pb, aliasForPathBlock);
+	//				for (BinaryTestBlock bt : vb.test.exp)
+	//					for (ValueBlock subvb : bt.values)
+	//						if (!isReferenceValidValueBlock(subvb, pb, aliasForPathBlock))
+	//							throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
+			}));
+			
+			// TODO - Can this be in a separate method
+			// Compute the destination of each value call blocks
+			pathBlocks.values().stream().forEach(pb->pb.getValues().stream().filter(vb->vb.call != null).forEach(vb->{
 				
-				// TODO - Validate that each path is compatible with parent path block
-				// i.e. === .../X/Y === {{call .../W/Z}} should be valid (I think!)
 				
-
-				// If the call is absolute we check only for an exact match
-				// First check if there exist an unambiguous matching absolute destination
-//				List<PathBlock> toCall;
-//				if (!vb.call.isRelative) {
-//					toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
-////					if (toCall == null)
-////						throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
-//				} else {
-//					List<ValuePath> vps = new ArrayList<>();
-//					vb.call.paths.forEach(path->{ // FIXME useless iteration!!!
-//						vps.add(pb.path.add(path));
-//					});
 					
-//						List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
+					// TODO - Validate that each path is compatible with parent path block
+					// i.e. === .../X/Y === {{call .../W/Z}} should be valid (I think!)
 					
-					// Add parent block path to call block if call is relative
-//					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), vb.call.isRelative, null, vb.from) : vb.call;
-			CallBlock newCB = vb.call.isRelative && pb.path != null 
-					? new CallBlock(vb.call.paths.stream().map(p->pb.path.add(p)).collect(Collectors.toList()), vb.call.isRelative, null, vb.from) 
-					: vb.call;
-//					if (!newCB.isRelative)
+	
+					// If the call is absolute we check only for an exact match
+					// First check if there exist an unambiguous matching absolute destination
+	//				List<PathBlock> toCall;
+	//				if (!vb.call.isRelative) {
+	//					toCall = getAbsolutePathBlockToCall(pathBlocks, vb.call);
+	////					if (toCall == null)
+	////						throw new BlockBuildingError("cannot find absolute path " + vb.call.name + ". Maybe you'd want to call .../" + vb.call.name + " instead?", vb.call.from);
+	//				} else {
+	//					List<ValuePath> vps = new ArrayList<>();
+	//					vb.call.paths.forEach(path->{ // FIXME useless iteration!!!
+	//						vps.add(pb.path.add(path));
+	//					});
 						
-
-			// If new call block is absolute (as by parent) then check again for an exact match
-			List<PathBlock> toCall = vb.call.isRelative
-				? getRelativePathBlockToCall(pathBlocks, newCB)
-				: getAbsolutePathBlockToCall(pathBlocks, newCB);
+	//						List<ValueBlock> args = null; // Why not simply : CallBlock newCB = pb.path ?
+						
+						// Add parent block path to call block if call is relative
+	//					CallBlock newCB = pb.path != null ? new CallBlock(Arrays.asList(new ValuePath[] {pb.path.add(path)}), vb.call.isRelative, null, vb.from) : vb.call;
+				CallBlock newCB = vb.call.isRelative && pb.path != null 
+						? new CallBlock(vb.call.paths.stream().map(p->pb.path.add(p)).collect(Collectors.toList()), vb.call.isRelative, null, vb.from) 
+						: vb.call;
+	//					if (!newCB.isRelative)
+							
+	
+				// If new call block is absolute (as by parent) then check again for an exact match
+				List<PathBlock> toCall = vb.call.isRelative
+					? getRelativePathBlockToCall(pathBlocks, newCB)
+					: getAbsolutePathBlockToCall(pathBlocks, newCB);
+						
+	//				}
+	//				if (toCall == null)
+	//					throw new BlockBuildingError("cannot find any path for " + vb.call.name, vb.from);
+	
+				
+				for (PathBlock tc : toCall) {
+					if (vb.call.isRelative != tc.isRelative)
+						throw new BuildingError("Incompatible path!!!", tc.from);
 					
-//				}
-//				if (toCall == null)
-//					throw new BlockBuildingError("cannot find any path for " + vb.call.name, vb.from);
-
-			
-			for (PathBlock tc : toCall) {
-				if (vb.call.isRelative != tc.isRelative)
-					throw new BuildingError("Incompatible path!!!", tc.from);
-				
-				int start = tc.pathname.startsWith(Constant.ANYPATH) ? Constant.ANYPATH.length()+1 : 0;
-				int end = (end = tc.pathname.lastIndexOf(Constant.COLON)) > start ? end : tc.pathname.length();
-				String classname = tc.pathname.substring(start, end);
-				
-				vb.call.addBlockToCall(classname, tc); // FIXME
-			}
-			// TODO Add detection for possible infinite loop (warn user)
-		}));
+					int start = tc.pathname.startsWith(Constant.ANYPATH) ? Constant.ANYPATH.length()+1 : 0;
+					int end = (end = tc.pathname.lastIndexOf(Constant.COLON)) > start ? end : tc.pathname.length();
+					String classname = tc.pathname.substring(start, end);
+					
+					vb.call.addBlockToCall(classname, tc); // FIXME
+				}
+				// TODO Add detection for possible infinite loop (warn user) if any
+			}));
+			return pathBlocks;
+		} finally {
+			long t2 = System.currentTimeMillis();
+			System.out.println("completed in " + (t2-t1) + " ms.");
+		}
 		
 		// TODO Validate that alias names in paths are unique in the path (also w.r.t class names)
 		
-		long t2 = System.currentTimeMillis();
-		System.out.println("Completed in " + (t2-t1) + " milliseconds.");
 		
-		return pathBlocks;
 	}
 	private static void validateTestBlock(LogicalTestBlock lt, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
 		if (lt == null) {} // do nothing
@@ -148,7 +151,7 @@ public class BlockBuilder {
 			for (LogicalTestBlock tb : lt.lexp)
 				validateTestBlock(tb, pb, aliasForPathBlock);
 		} else
-			throw new IllegalStateException("Case not allowed by grammar");
+			throw new IllegalStateException("To be implemented when needed");
 	}
 	private static void validateTestBlock(BinaryTestBlock bt, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
 		for (ValueBlock subvb : bt.values)
@@ -212,7 +215,7 @@ public class BlockBuilder {
 				else if (comp.isEmpty())
 					throw new BuildingError("No path found for call " + name, call.from);
 				else if (!comp.isEmpty())
-					throw new BuildingError("multiple paths found for call " + name, call.from);
+					throw new BuildingError("Multiple paths found for call " + name, call.from);
 			}
 			results.add(result);
 		});
@@ -377,7 +380,7 @@ public class BlockBuilder {
 					} else if (lineExp.escapedChar != null) {
 						if (!insideComment.get()) {
 							String esc = getStructText(fullText, lineExp);
-							buffer.append(esc.charAt(esc.length()-1)); // Remove escape code
+							buffer.append(esc.substring(1)); // Remove escape code
 						}
 					} else if (lineExp.rawText != null) {
 						if (!insideComment.get()) {
@@ -392,10 +395,10 @@ public class BlockBuilder {
 							if (lineExp.value.valueExp != null)
 								result.add(parseValue(lineExp.value));
 							else
-								throw new BuildingError("to be implemented", lineExp.from); // FIXME To be implemented
+								throw new BuildingError("To be implemented when needed", lineExp.from); // FIXME To be implemented
 						}
 					} else {
-						throw new BuildingError("not yet implemented line exp type", lineExp.from);
+						throw new BuildingError("To be implemented when needed", lineExp.from);
 					}
 				});
 				
@@ -406,7 +409,7 @@ public class BlockBuilder {
 					buffer.setLength(0);
 				}
 				// Add new line if needed: 
-				if (!result.peek().isControlOperator() && !insideComment.get())
+				if (!result.isEmpty() && !result.peek().isControlOperator() && !insideComment.get())
 					result.add(new TextBlock(System.lineSeparator(), line.from));
 				
 			} else // Empty line

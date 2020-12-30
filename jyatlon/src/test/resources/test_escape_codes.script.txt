@@ -1,0 +1,14 @@
+>>>TEST: test_escape_codes
+>>>DESC: Test usage of escape character in various situations
+>>>ROOT: "test"
+
+>>>TEMPLATE:
+
+%%% comment
+%%~% escaped comment
+~{begin A}
+
+>>>EXPECTED:
+%%% escaped comment
+{begin A}
+

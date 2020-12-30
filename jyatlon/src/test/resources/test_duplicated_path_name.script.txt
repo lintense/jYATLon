@@ -1,0 +1,14 @@
+>>>TEST: test_duplicated_path_name
+>>>DESC: 
+>>>ROOT: "test"
+
+>>>TEMPLATE:
+
+=== TEST_1 ===
+=== TEST_2 ===
+=== TEST_1 ===
+
+>>>EXPECTED:
+
+java.lang.IllegalArgumentException: line 3:1 Duplicated path block name: $/TEST_1
+

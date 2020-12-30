@@ -44,16 +44,17 @@ import jyatlon.core.Block.*; // Input structure
 public class BlockProcessor {
 
 	public static void merge(PathBlock pb, Writer w, Object r) {
+		System.out.print("Starting merge process...");
+		long t1 = System.currentTimeMillis();
 		try {
-			System.out.println("Starting merge process...");
-			long t1 = System.currentTimeMillis();
 			Matcher matcher = new Matcher();
 			writeBlock(pb, w, new Combination(matcher), ValuePath.getRoot(r));
-			long t2 = System.currentTimeMillis();
-			System.out.println("Completed in " + (t2-t1) + " milliseconds.");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			long t2 = System.currentTimeMillis();
+			System.out.println("completed in " + (t2-t1) + " ms.");
 		}
 	}
 	private static void writeBlock(PathBlock pb, Writer w, Combination combination, ValuePath ctx) throws IOException {

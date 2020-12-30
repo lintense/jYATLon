@@ -1,0 +1,10 @@
+>>>TEST: test_missing_begin_control_block
+>>>DESC: It is possible to pass parameters to path
+>>>ROOT: "test"
+
+>>>TEMPLATE:
+
+{before PARM}
+
+>>>EXPECTED:
+java.lang.IllegalArgumentException: line 1:1 missing control {begin PARM}
