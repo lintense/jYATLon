@@ -16,6 +16,8 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import jyatlon.core.Block.PathBlock;
+import jyatlon.core.BlockBuilder.BuildingError;
+import jyatlon.core.BlockProcessor.ProcessingError;
 import jyatlon.core.Struct.Template;
 import jyatlon.generated.YATLLexer;
 import jyatlon.generated.YATLParser;
@@ -50,16 +52,18 @@ public class YATL {
 			Template t = parseTemplate(content);
 	    	pathBlocks = BlockBuilder.parseTemplate(content, t);
 	    	mainBlock = pathBlocks.get(Constant.ROOT);
-		} catch (BlockBuildingError e) {
+		} catch (BuildingError e) {
 			Point p = getErrorPosition(e.pos);
 			throw new IllegalArgumentException("line " + p.y + ":" + p.x + " " + e.getMessage(), e);
 		}
 	}
-//	private String extractLineSep(String content) {
-//		return System.lineSeparator();
-//	}
 	public void merge(Object root, Writer w) {
-		BlockProcessor.merge(mainBlock, w, root);
+		try {
+			BlockProcessor.merge(mainBlock, w, root);
+		} catch (ProcessingError e) {
+			Point p = getErrorPosition(e.pos);
+			throw new IllegalArgumentException("line " + p.y + ":" + p.x + " " + e.getMessage(), e);
+		}
 	}
     static Template parseTemplate(String templateContent) { // Used for testing
     	String actualTemplate = getActualContent(templateContent); // Always at least 2 lines

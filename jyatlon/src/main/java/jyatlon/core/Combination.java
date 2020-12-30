@@ -81,17 +81,18 @@ public class Combination {
 
 		return result;
 	}
-	// FIXME - Do we need this method? 
 	// FIXME - Needs to be synchronized with getMatchingPath()
 	// Reason: This is quicker than getMatchingPath() when testing for isDefined();
 	// This is because computeValues() is a heavy process...
-	private boolean hasMatchingPath(ValuePath current) { 
+	public boolean hasMatchingPath(ValuePath current) { 
 		// Find which path element is matching the current value
 		// TODO seem a bit restrictive. i.e.Null alias should match
 		for (ValuePath path : paths)
 			if (Arrays.equals(current.classes, path.classes) && Arrays.equals(current.aliases, path.aliases))
 				return true;
-		
+		return false;
+	}
+	private boolean isArgDefined(ValuePath current) {
 		return getObjectForName(current.aliases[0] != null ? current.aliases[0] : current.classes[0]) != null;
 	}
 	public ValuePath getMatchingPath(ValuePath current) { // path=found, null=not found
@@ -212,7 +213,8 @@ public class Combination {
 		return result;
 	}
 	public boolean isDefined(ValueBlock vb) {
-		boolean argOk = vb.ops == null || vb.ops.stream().map(op -> op.getValues()).flatMap(List::stream).allMatch(ivb -> hasMatchingPath(ivb.valuePath));
+		boolean argOk = vb.ops == null || vb.ops.stream().map(op -> op.getValues()).flatMap(List::stream).allMatch(ivb -> 
+			hasMatchingPath(ivb.valuePath) || isArgDefined(ivb.valuePath));
 		boolean vbOk = isAliasDefined(vb.argName)
 				|| Utils.isString(vb.argName, Constant.QUOTES)
 				|| Utils.isNumber(vb.argName)

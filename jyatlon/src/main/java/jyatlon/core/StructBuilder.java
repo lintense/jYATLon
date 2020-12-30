@@ -22,7 +22,7 @@ import jyatlon.generated.YATLBaseListener;
  * SRP: This class is responsible to create a new structure from the AST resulting from parsing.
  * 
  * This is a very simple quite powerful parser that will read the ANTLR generated tree and create a nice Java Struct from it.
- * The nicest thing is that the Struct class will be generated for you using the StructGen.main method.
+ * The nicest thing is that the Struct class will be generated for you by using the StructGen.main method.
  * This will insure that your Struct class to be always in perfect sync with the Grammar.
  * The binding between the Struct and the rest of the application is insured by Java.
  * 

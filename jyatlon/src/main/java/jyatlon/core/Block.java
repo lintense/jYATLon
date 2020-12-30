@@ -13,9 +13,13 @@ import java.util.stream.Collectors;
 
 
 /**
- * @author linte
+ * @author lintense
  * SRP Data structure that holds all the compiled template infos.
  * This class is a data structure, logic should not be placed here!
+ * This class can be seen as a facade for the actual processing class.
+ * This means that when modifying the language grammar, only the changes that
+ * make it through here will have an impact on the actual processing.
+ * 
  * @see BlockBuilder This object is build by BlockBuilder.
  * @see BlockProcessor This object is processed by BlockProcessor.
  */
@@ -82,10 +86,9 @@ public abstract class Block {
 		 * @param lastIndex
 		 * @param subControls
 		 * @param ops
-		 * ControlBlock mmust be initialized since they must be created up front in order to provide its parent upon creation.
+		 * ControlBlock must be initialized since they must be created up front in order to provide its parent upon creation.
 		 */
 		public ControlBlock init(Map<Integer, ControlOperator> ops){
-//			this.lastBlockIndex = lastIndex;
 			this.before = ops.get(CONTROL_BEFORE);
 			this.between = ops.get(CONTROL_BETWEEN);
 			this.after = ops.get(CONTROL_AFTER);
@@ -131,7 +134,6 @@ public abstract class Block {
 	}
 	public static class PathBlock extends Block {
 		final String pathname;
-//		final CallBlock path;
 		final ValuePath path;
 		final boolean isRelative;
 		List<Block> blocks;
@@ -245,64 +247,36 @@ public abstract class Block {
 		}
 	}
 	public static class CallBlock extends Block {
-
 		final List<ValuePath> paths;
-//		final String name;
 		final boolean isRelative;
 		final List<ValueBlock> args; // empty when into a PathBlock.path
-		private Map<String,PathBlock> toCall = new HashMap<>();
-		private Map<ValuePath,PathBlock> toCallTest = new HashMap<>(); // FIXME
+		private Map<ValuePath,PathBlock> toCall = new HashMap<>(); // FIXME
 		
 		public CallBlock(List<ValuePath> paths, boolean isRelative, List<ValueBlock> args, int from) {
 			super(from);
 			this.paths = paths;
 			this.args = args;
 			this.isRelative = isRelative;
-//			this.name = computeName(); // FIXME Is it used?
 		}
-//		private String computeName() { // TODO - If used by section then put is in section...
-//			String result = "";
-//			String finalAlias = path.getAliasName(); // Only final alias is part of the name
-//			for (int i = 0; i < path.classes.length; i++)
-//				result += "/" + path.classes[i];
-//			return (isRelative ? ".../" : "") + result.substring(1) + (finalAlias != null ? ":" + finalAlias : "");
-//		}
 		public void addBlockToCall(String classname, PathBlock call) {
-			toCall.put(classname, call); // analyse this!
-			toCallTest.put(call.path, call);
+			toCall.put(call.path, call);
 		}
 		public PathBlock getBlockToCall(Combination combination, ValuePath vp) { // TODO !isRelative
-//			PathBlock pb = toCall.get(vp.getClassName());
-//			if (pb != null)
-//				return pb;
-//			String classname = Utils.getClassName(vp.getObject());
-			
 			// TODO validate there are no conflicting ClassName in value block call paths...
-			
-			assert isRelative || toCallTest.keySet().iterator().next().length() == combination.pathCtx.length() + 1;
+			assert isRelative || toCall.keySet().iterator().next().length() == combination.pathCtx.length() + 1;
 			
 			// For now, just check the last object class
 			String className = Utils.getClassName(vp.getObject());
-			for (Iterator<Entry<ValuePath, PathBlock>> i = toCallTest.entrySet().iterator(); i.hasNext();) {
+			for (Iterator<Entry<ValuePath, PathBlock>> i = toCall.entrySet().iterator(); i.hasNext();) {
 				Map.Entry<ValuePath,Block.PathBlock> e = i.next();
 				if (className.endsWith(e.getKey().getClassName()))
 					return e.getValue();
 			}
-//			LOOP: for (Iterator<Entry<ValuePath, PathBlock>> i = toCallTest.entrySet().iterator(); i.hasNext();) {
-//				Map.Entry<ValuePath,Block.PathBlock> e = i.next();
-//				
-//				int total = isRelative ? vp.length() : e.getKey().length();
-//				for(int j = 1; j <= total; j++)
-//					if (!Utils.getClassName(vp.objects[vp.length()-j]).endsWith(e.getKey().classes[e.getKey().length()-j]))
-//						continue LOOP;
-//				return e.getValue();
-//			}
 			return null;
 		}
 		public String[] getPossibleCalls() {
-			String[] result = new String[toCall.size()];
-			toCall.keySet().toArray(result);
-			return result;
+			String[] result = new String[toCall.keySet().size()];
+			return toCall.keySet().stream().map(p->p.getClassName()).collect(Collectors.toList()).toArray(result);
 		}
 		public List<ValueBlock> getValues() {
 			return args.stream().map(b->b.getValues()).flatMap(List::stream).collect(Collectors.toList());

@@ -87,8 +87,20 @@ public class ValuePath {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < classes.length; i++)
 			sb.append(".").append(classes[i]).append(aliases[i] != null && !aliases[i].isEmpty() ? ":" + aliases[i] : "");
-		return "{" + sb.toString().substring(1) + "}";
+		return Constant.LVALUE + sb.toString().substring(1) + Constant.RVALUE;
 	}
+//	public boolean isSamePath(ValuePath vp) {
+//		int len;
+//		if ((len = this.length()) == vp.length()) {
+//			for (int i = 0; i < len; i++)
+//				if (!this.classes[i].equals(vp.classes[i])
+//					|| (this.aliases[i] == null && vp.aliases[i] != null)
+//					|| (this.aliases[i] != null && !this.aliases[i].equals(vp.aliases[i])))
+//						return false;
+//			return true;
+//		}
+//		return false;
+//	}
 	public int length() {
 		return classes.length;
 	}

@@ -11,6 +11,11 @@ public interface Constant {
 
 	static final String QUOTES = "\"''\"";
 	
+	static final String LCURL = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.LCURL));
+	static final String RCURL = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.RCURL));
+	static final String LVALUE = LCURL + LCURL;
+	static final String RVALUE = RCURL + RCURL;
+	
 	static final String ROOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.ROOT));
 	static final String NOT = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.NOT));
 	static final String MINUS = Utils.unquote(YATLLexer.VOCABULARY.getLiteralName(YATLLexer.MINUS));

@@ -1,0 +1,11 @@
+>>>TEST: test_missing_alias_value_for_block
+>>>DESC: block has no value with corresponding alias
+>>>ROOT: ["a","b","c"]
+
+>>>TEMPLATE:
+
+{{$.toString:ALIAS}}
+
+>>>EXPECTED:
+
+java.lang.IllegalArgumentException: line 1:1 Value that returns a collection must be declared in a block: {{$.toString:ALIAS}}

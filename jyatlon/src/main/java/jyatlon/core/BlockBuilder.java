@@ -1,7 +1,6 @@
 package jyatlon.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,29 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import jyatlon.core.Block.BinaryTestBlock;
-import jyatlon.core.Block.CallBlock;
-import jyatlon.core.Block.ControlBlock;
-import jyatlon.core.Block.ControlOperator;
-import jyatlon.core.Block.LogicalTestBlock;
-import jyatlon.core.Block.OperationBlock;
-import jyatlon.core.Block.PathBlock;
-import jyatlon.core.Block.TextBlock;
-import jyatlon.core.Block.ValueBlock;
-import jyatlon.core.Struct.BinaryExp;
-import jyatlon.core.Struct.CallExp;
-import jyatlon.core.Struct.ControlExp;
-import jyatlon.core.Struct.IfExp;
-import jyatlon.core.Struct.Line;
-import jyatlon.core.Struct.LogicalExp;
-import jyatlon.core.Struct.Operation;
-import jyatlon.core.Struct.PathArg;
-import jyatlon.core.Struct.PathExp;
-import jyatlon.core.Struct.Section;
-import jyatlon.core.Struct.Template;
-import jyatlon.core.Struct.Value;
-import jyatlon.core.Struct.ValueExp;
-
+import jyatlon.core.Struct.*; // Input structure
+import jyatlon.core.Block.*; // Output structure
 
 /**
  * @author lintense
@@ -71,7 +49,7 @@ public class BlockBuilder {
 		t.section.forEach(section -> {
 			PathBlock b = parseSection(fullText, section);
 			if (pathBlocks.put(b.pathname, b) != null)
-				throw new BlockBuildingError("duplicated path name " + b.pathname, b.from);
+				throw new BuildingError("duplicated path name " + b.pathname, b.from);
 		});
 		
 		// Gather all alias path blocks aliases
@@ -87,7 +65,7 @@ public class BlockBuilder {
 		// Reason: To help the user, no implicit value.
 		pathBlocks.values().stream().forEach(pb->pb.getValues().stream().forEach(vb->{
 			if (!isValidValueBlock(vb, pb, aliasForPathBlock))
-				throw new BlockBuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
+				throw new BuildingError("unknown reference for value " + vb.argName + ". A value must begin with the root context, a path or an alias.", vb.from);
 
 			// Validate sub values inside test block
 			if (vb.test != null)
@@ -143,7 +121,7 @@ public class BlockBuilder {
 			
 			for (PathBlock tc : toCall) {
 				if (vb.call.isRelative != tc.isRelative)
-					throw new BlockBuildingError("Incompatible path!!!", tc.from);
+					throw new BuildingError("Incompatible path!!!", tc.from);
 				
 				int start = tc.pathname.startsWith(Constant.ANYPATH) ? Constant.ANYPATH.length()+1 : 0;
 				int end = (end = tc.pathname.lastIndexOf(Constant.COLON)) > start ? end : tc.pathname.length();
@@ -175,7 +153,7 @@ public class BlockBuilder {
 	private static void validateTestBlock(BinaryTestBlock bt, PathBlock pb, Map<PathBlock,Set<String>> aliasForPathBlock) {
 		for (ValueBlock subvb : bt.values)
 			if (!isValidValueBlock(subvb, pb, aliasForPathBlock))
-				throw new BlockBuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
+				throw new BuildingError("unknown reference for value " + subvb.argName + ". A value must begin with the root context, a path or an alias.", subvb.from);
 	}
 	private static boolean isValidValueBlock(ValueBlock vb, PathBlock pb, Map<PathBlock, Set<String>> aliasForPathBlock) {
 		return Constant.ROOT.equals(vb.argName)
@@ -232,9 +210,9 @@ public class BlockBuilder {
 				if (comp.size() == 1)
 					result = comp.get(0);
 				else if (comp.isEmpty())
-					throw new BlockBuildingError("No path found for call " + name, call.from);
+					throw new BuildingError("No path found for call " + name, call.from);
 				else if (!comp.isEmpty())
-					throw new BlockBuildingError("multiple paths found for call " + name, call.from);
+					throw new BuildingError("multiple paths found for call " + name, call.from);
 			}
 			results.add(result);
 		});
@@ -298,9 +276,9 @@ public class BlockBuilder {
 			if (good != null && bad == null)
 				results.add(good);
 			else if (good != null && bad != null)
-				throw new BlockBuildingError("ambiguous path for call " + getPathName(path, newCB.isRelative), newCB.from);
+				throw new BuildingError("ambiguous path for call " + getPathName(path, newCB.isRelative), newCB.from);
 			else if (good == null)
-				throw new BlockBuildingError("cannot find any path for " + getPathName(path, newCB.isRelative), newCB.from);
+				throw new BuildingError("cannot find any path for " + getPathName(path, newCB.isRelative), newCB.from);
 		});
 		return results;
 	}
@@ -414,10 +392,10 @@ public class BlockBuilder {
 							if (lineExp.value.valueExp != null)
 								result.add(parseValue(lineExp.value));
 							else
-								throw new BlockBuildingError("to be implemented", lineExp.from); // FIXME To be implemented
+								throw new BuildingError("to be implemented", lineExp.from); // FIXME To be implemented
 						}
 					} else {
-						throw new BlockBuildingError("not yet implemented line exp type", lineExp.from);
+						throw new BuildingError("not yet implemented line exp type", lineExp.from);
 					}
 				});
 				
@@ -450,20 +428,20 @@ public class BlockBuilder {
 				if (!sameAlias && co.operation == ControlBlock.CONTROL_BEGIN) {
 					currentControl.addBlock(extractControlBlock(new ControlBlock(currentBlock, co, currentBlock.from), i)); // Extract sub block
 				} else if (co.operation == ControlBlock.CONTROL_BEGIN)
-					throw new BlockBuildingError("duplicated control {begin:" + co.aliasName + "}", co.from) ;
+					throw new BuildingError("duplicated control {begin:" + co.aliasName + "}", co.from) ;
 				else if (sameAlias && co.operation == ControlBlock.CONTROL_END) {
 					activeControl.put(co.operation, currentControl = co);
 					return validateControlBlock(currentBlock.init(activeControl));
 				} else if (sameAlias)
 					activeControl.put(co.operation, currentControl = co);
 				else
-					throw new BlockBuildingError("missing control {begin:" + co.aliasName + "}", co.from) ;
+					throw new BuildingError("missing control {begin " + co.aliasName + "}", co.from) ;
 			} else 
 				currentControl.addBlock(b);
 		}
 		if (currentBlock.isSectionBlock())
 			return currentBlock;
-		throw new BlockBuildingError("missing control {begin:" + currentBlock.aliasName + "}", currentBlock.from);
+		throw new BuildingError("missing control {begin " + currentBlock.aliasName + "}", currentBlock.from);
 	}
 	private static ControlBlock validateControlBlock(ControlBlock cb) {
 		// My alias MUST be defined at least once
@@ -472,13 +450,13 @@ public class BlockBuilder {
 		// Validate that all the control operators (except begin) do not reference the control alias.
 		// FIXME error message must be clearer
 		if (cb.before != null && cb.before.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid alias reference in {before " + cb.aliasName + "}", cb.before.from);
+			throw new BuildingError("{before " + cb.aliasName + "} control block cannot reference its own alias: " + cb.aliasName, cb.before.from);
 		if (cb.between != null && cb.between.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid alias reference in {between " + cb.aliasName + "}", cb.between.from);
+			throw new BuildingError("{between " + cb.aliasName + "} control block cannot reference its own alias: " + cb.aliasName, cb.between.from);
 		if (cb.after != null && cb.after.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid alias reference in {after " + cb.aliasName + "}", cb.after.from);
+			throw new BuildingError("{after " + cb.aliasName + "} control block cannot reference its own alias: " + cb.aliasName, cb.after.from);
 		if (cb.empty != null && cb.empty.getValues().stream().anyMatch(v->v.getAliases().stream().anyMatch(a->a.equals(cb.aliasName))))
-			throw new BlockBuildingError("invalid alias reference in {empty " + cb.aliasName + "}", cb.empty.from);
+			throw new BuildingError("{empty " + cb.aliasName + "} control block cannot reference its own alias: " + cb.aliasName, cb.empty.from);
 
 		// TODO Validate all aliases used everywhere are defined in block parents... 
 	
@@ -487,7 +465,7 @@ public class BlockBuilder {
 	private static ValueBlock parseValue(Value value) {
 		ValueBlock result = parseValueExp(value.valueExp, parseCallExp(value.callExp), parseIfExp(value.ifExp), value.from);
 		if (result.call != null && !isValidForValue(result.call)) // TODO Why is that so?
-			throw new BlockBuildingError("alias only allowed at the end of a call in " + getPathName(result.call), result.from);
+			throw new BuildingError("alias only allowed at the end of a call in " + getPathName(result.call), result.from);
 		return result;
 	}
 	private static boolean isValidForValue(CallBlock cb) {
@@ -503,7 +481,7 @@ public class BlockBuilder {
 			// Validation: Only one operator allowed.
 			// TODO Allow inner logical test block inside parenthesis
 			if (exp.logicalOp.stream().distinct().limit(2).count() != 1)
-				throw new BlockBuildingError("mixing logical operators is not allowed " + exp.logicalOp, exp.from);
+				throw new BuildingError("mixing logical operators is not allowed " + exp.logicalOp, exp.from);
 			else
 				op = exp.logicalOp.get(0);
 		}
@@ -543,5 +521,15 @@ public class BlockBuilder {
 		int operationId = ControlBlock.extractControlId(ce.controlOp);
 		boolean isEndOfBlock = operationId == ControlBlock.CONTROL_END;
 		return new ControlOperator(isEndOfBlock, ce.aliasName, operationId, ce.from);
+	}
+	public static class BuildingError extends Error {
+
+		private static final long serialVersionUID = 1L;
+		public final int pos;
+
+		public BuildingError(String message, int pos) {
+			super(message);
+			this.pos = pos;
+		}
 	}
 }

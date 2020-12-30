@@ -1,0 +1,16 @@
+>>>TEST: test_own_alias_in_between_block.script
+>>>DESC: Alias must not be present into its own between block
+>>>ROOT: "test"
+
+>>>TEMPLATE:
+
+{begin A}
+{{$.toString:A}}
+{between A}
+{{$.toString:A}}
+{end A}
+
+>>>EXPECTED:
+
+java.lang.IllegalArgumentException: line 3:1 {between A} control block cannot reference its own alias: A
+
