@@ -1,0 +1,14 @@
+>>>TEST: test_collection containing_null_values_tostring
+>>>DESC: The accessor returns a collection that contains null values
+>>>ROOT: {"acc": [null,null,null]}
+
+>>>TEMPLATE:
+
+{begin PARM}
+{{$.acc:PARM.toString}}
+{empty PARM}
+null value skipped!
+{end PARM}
+
+>>>EXPECTED:
+null value skipped!

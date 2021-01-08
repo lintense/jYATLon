@@ -221,9 +221,9 @@
             <version>0.8.4</version>
             <executions>
                <!--
-            Prepares the property pointing to the JaCoCo runtime agent which
-            is passed as VM argument when Maven the Surefire plugin is executed.
-        -->
+               Prepares the property pointing to the JaCoCo runtime agent which
+               is passed as VM argument when Maven the Surefire plugin is executed.
+               -->
                <execution>
                   <id>pre-unit-test</id>
                   <goals>
@@ -235,14 +235,14 @@
                      <!--
                     Sets the name of the property containing the settings
                     for JaCoCo runtime agent.
-                -->
+                    -->
                      <propertyName>surefire.argLine</propertyName>
                   </configuration>
                </execution>
                <!--
-            Ensures that the code coverage report for unit tests is created after
-            unit tests have been run.
-        -->
+               Ensures that the code coverage report for unit tests is created after
+               unit tests have been run.
+               -->
                <execution>
                   <id>post-unit-test</id>
                   <phase>test</phase>

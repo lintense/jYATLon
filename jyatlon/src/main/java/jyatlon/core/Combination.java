@@ -209,6 +209,9 @@ public class Combination {
 	}
 	private List<ValuePath> extractPaths(OperationBlock ob, ValuePath p){
 		Object o = p.getObject();
+		if (o == null)
+			return Collections.emptyList();
+		
 		Class<?> c = o.getClass();
 		
 		Object[] parms = ob.args != null && !ob.args.isEmpty()

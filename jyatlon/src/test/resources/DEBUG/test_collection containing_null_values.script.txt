@@ -1,0 +1,12 @@
+>>>TEST: test_collection containing_null_values
+>>>DESC: The accessor returns a collection that contains null values
+>>>ROOT: {"acc": [null,null,null]}
+
+>>>TEMPLATE:
+
+{begin PARM}
+{{$.acc:PARM}}
+{end PARM}
+
+>>>EXPECTED:
+java.lang.IllegalArgumentException: line 1:1 missing control {begin PARM}

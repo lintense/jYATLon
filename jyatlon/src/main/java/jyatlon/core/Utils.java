@@ -79,7 +79,7 @@ public class Utils {
 	}
 	public static String getClassName(Object o) {
 		Object result;
-		if (Map.class.isAssignableFrom(o.getClass()) && (result = ((Map<?,?>)o).get(Constant.MAP_KEY_FOR_CLASS)) != null)
+		if (o != null && Map.class.isAssignableFrom(o.getClass()) && (result = ((Map<?,?>)o).get(Constant.MAP_KEY_FOR_CLASS)) != null)
 			return result.toString();
 		return o != null ? o.getClass().getName() : null;
 	}
