@@ -44,7 +44,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -91,10 +90,10 @@ public class ObjectTree {
 					dumpObject(v, done, indent, out);
 				} else if (v instanceof Map){
 					dumpObject(v, done, indent, out);
-					showMap((Map)v, done, indent, out);
+					showMap((Map<?,?>)v, done, indent, out);
 				} else if (v instanceof Collection){
 					dumpObject(v, done, indent, out);
-					showCollection((Collection)v, done, indent, out);
+					showCollection((Collection<?>)v, done, indent, out);
 				} else {
 					dumpObject(v, done, indent, out);
 				}
@@ -110,13 +109,13 @@ public class ObjectTree {
 	 */
 	private static void showSizeIfNeeded(Object o, SortedSet<Field> sortedSet, String indent, PrintStream out) {
 		if (o instanceof Collection && !sortedSet.stream().anyMatch(p->p.getName().equals("size")))
-			out.println(indent + "size: (Integer)" + ((Collection)o).size() + ";");
+			out.println(indent + "size: (Integer)" + ((Collection<?>)o).size() + ";");
 	}
 	private static boolean isCollection(Object o) {
-		Class c = o.getClass();
+		Class<?> c = o.getClass();
 		return c.isArray() ||  Collection.class.isAssignableFrom(c) || Map.class.isAssignableFrom(c);
 	}
-	private static void showCollection(Collection l, Map<Object, Integer> done, String indent, PrintStream out) {
+	private static void showCollection(Collection<?> l, Map<Object, Integer> done, String indent, PrintStream out) {
 		indent += INDENTATION;
 		int index = 0;
 		for (Object o : l){
@@ -124,9 +123,9 @@ public class ObjectTree {
 			dumpObject(o, done, indent, out);
 		}
 	}
-	private static void showMap(Map m, Map<Object, Integer> done, String indent, PrintStream out) {
+	private static void showMap(Map<?,?> m, Map<Object, Integer> done, String indent, PrintStream out) {
 		indent += INDENTATION;
-		for (Map.Entry entry : (Set<Map.Entry>)m.entrySet()){
+		for (Map.Entry<?,?> entry : m.entrySet()){
 			Object v = entry.getValue();
 			Object k = entry.getKey();
 			out.print(indent + k + ": ");
@@ -145,15 +144,15 @@ public class ObjectTree {
 	 */
 	private static Map<Field,Object> extractFields(Object re, Map<Object, Integer> done){
 		
-		Map<Field,Object> result = new LinkedHashMap();
+		Map<Field,Object> result = new LinkedHashMap<Field, Object>();
 		// Only keep the none transient fields
 		Class<?> type = re.getClass();
-		ArrayList<Field> fields = new ArrayList();
+		ArrayList<Field> fields = new ArrayList<Field>();
 		while (type != null){
 			fields.addAll(Arrays.asList(type.getDeclaredFields()));
 			type = type.getSuperclass();
 		}
-		ArrayList<Field> filteredFields = new ArrayList();
+		ArrayList<Field> filteredFields = new ArrayList<Field>();
 		for (Field field : fields)
 			if (!field.getName().equals("this$0") && !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()))
 				filteredFields.add(field);

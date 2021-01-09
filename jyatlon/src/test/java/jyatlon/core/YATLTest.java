@@ -42,9 +42,11 @@ import java.io.PrintStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -59,7 +61,10 @@ import jyatlon.test.utilities.TestUtils;
 @RunWith(JUnitPlatform.class)
 class YATLTest {
 	private static final String TEST_SCRIPT_EXTENSION = "*.script.txt";
+	private static final String TEST_SCRIPT_RESULT_EXT = ".last.txt";
 	
+	private static final String TEST_SCRIPT_SECTION_PREFIX = ">>>";
+	private static final String TEST_SCRIPT_SECTION_SUFFIX = ":";
 	private static final String TEST_SCRIPT_ROOT = "ROOT";
 	private static final String TEST_SCRIPT_TEMPLATE = "TEMPLATE";
 	private static final String TEST_SCRIPT_EXPECTED = "EXPECTED";
@@ -132,17 +137,21 @@ class YATLTest {
 		} catch (Exception e) {
 			actualResult = e.getClass().getName() + ": " + e.getMessage();
 		}
+		if (!expectedResult.equals(actualResult)) {
+			testMap.put(TEST_SCRIPT_EXPECTED, actualResult);
+			TestUtils.saveToFile(file.getParentFile().getAbsolutePath(), file.getName() + TEST_SCRIPT_RESULT_EXT, dumpTestMap(testMap));
+		}
 		assertEquals(expectedResult, actualResult, "Error testing file: " + file.getName());
 	}
 	private static Map<String,String> extractTestMap(List<String> lines){
-		Map<String, String> result = new HashMap<>();
+		Map<String, String> result = new LinkedHashMap<>(); // Keep section order intact
 		String command = null;
 		StringBuilder sb = new StringBuilder();
 		for (String l : lines) {
-			if (l.startsWith(">>>")) {
+			if (l.startsWith(TEST_SCRIPT_SECTION_PREFIX)) {
 				if (command != null)
 					result.put(command, sb.toString().trim());
-				command = l.substring(3, l.indexOf(':')).trim();
+				command = l.substring(TEST_SCRIPT_SECTION_PREFIX.length(), l.indexOf(TEST_SCRIPT_SECTION_SUFFIX)).trim();
 				sb.setLength(0);
 				sb.append(l.substring(l.indexOf(':') + 1).trim());
 			} else {
@@ -153,6 +162,19 @@ class YATLTest {
 			result.put(command, sb.toString().trim());
 		return result;
 	}
+	private static String dumpTestMap(Map<String, String> testMap){
+		boolean first = true;
+		StringBuilder sb = new StringBuilder();
+		for (Iterator<Entry<String, String>> i = testMap.entrySet().iterator(); i.hasNext();) {
+			Entry<String, String> e = i.next();
+			if (e.getValue().indexOf('\n') < 0)
+				sb.append(TEST_SCRIPT_SECTION_PREFIX).append(e.getKey()).append(TEST_SCRIPT_SECTION_SUFFIX).append(' ').append(e.getValue()).append('\n');
+			else
+				sb.append(first?"":"\n").append(TEST_SCRIPT_SECTION_PREFIX).append(e.getKey()).append(TEST_SCRIPT_SECTION_SUFFIX).append('\n').append('\n').append(e.getValue()).append('\n').append('\n');
+			first = false;
+		}
+		return sb.toString();
+	}
 	private static String showTestHeader(String testName) {
 		System.out.println(">>> Testing script file : " + (new File(AUTOMATED_TESTING_FOLDER, testName + ".txt")).getAbsolutePath().toUpperCase());
 		return testName;
@@ -162,7 +184,7 @@ class YATLTest {
 		PrintStream ps = new PrintStream(baos);
 		ObjectTree.dumpObject(t, ps);
 		String obtained = baos.toString();
-		TestUtils.saveToFile(AUTOMATED_TESTING_FOLDER, filename + ".last.txt", obtained);
+		TestUtils.saveToFile(AUTOMATED_TESTING_FOLDER, filename + TEST_SCRIPT_RESULT_EXT, obtained);
 		return obtained;
 	}
 	private static String process(String templateContent, Object root) throws IOException {
